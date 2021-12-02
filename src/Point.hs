@@ -1,4 +1,4 @@
-module Point (Point, fromInt, fromText, x, y) where
+module Point (Point, fromInt, fromIntPartial, fromText, x, y) where
 
 import Universum
 import Flow
@@ -19,6 +19,10 @@ fromInt x y
     | otherwise = Nothing
     where
         validate x = x `elem` [0..14] -- GHC optimises this away, right?
+
+-- don't use this at home
+fromIntPartial :: Int -> Int -> Point
+fromIntPartial x y = fromMaybe (error "invalid x or y") (fromInt x y)
 
 -- | Another way to create a Point
 fromText :: Text -> Maybe Point

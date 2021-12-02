@@ -1,4 +1,4 @@
-module Pos (Move(..), Pos, Pos.empty, unwrap, adjust, update, moveAt, moveCount, makeMove, makeMove', fromList, fromGetpos, Pos.toText, printPos) where
+module Pos (Move(..), Pos, Pos.empty, transform, longHash, longHashM, unwrap, adjust, update, moveAt, moveCount, makeMove, makeMove', fromList, fromGetpos, Pos.toText, printPos) where
 
 import Universum
 -- import Universum.Container
@@ -8,8 +8,8 @@ import LitoUtils
 import Point (Point)
 import qualified Point
 
-import Data.Sequence ((!?))
 import qualified Data.Sequence as Seq
+import qualified Data.Tree as Seq
 
 -- | Represents a move on the board
 data Move
@@ -19,19 +19,56 @@ data Move
     deriving (Show, Eq, Ord, Enum)
 
 -- | A 15x15 matrix of moves. Gimme dependent types...
-newtype Pos = Pos (Seq (Seq Move)) deriving (Show, Eq)  -- I should a type different from Seq for this
-                                                        -- Seq seems to be a decent choice after all. The other option is Vector
-                                                        -- y then x, not the other way around!
+newtype Pos = Pos (Seq (Seq Move)) deriving Show    -- I should a type different from Seq for this
+                                                    -- Seq seems to be a decent choice after all. The other option is Vector
+                                                    -- y then x, not the other way around!
 
-toInteger :: Pos -> Integer
-toInteger =
+instance Eq Pos where
+    (==) = (==) `on` longHashM
+
+-- | Creates an Integer 'hash' of a position.  longHash pos /= longHash (mirror Pos) 
+longHash :: Pos -> Integer
+longHash =
     unwrap
     .> join
     .> Seq.foldrWithIndex (\i move acc -> acc + 3^i * (fromEnum .> fromIntegral) move) 0
 
+-- slow af
+transform :: (Int -> Int -> Point) -> Pos -> Pos
+transform f =
+    unwrap 
+    .> mapxy (\x y s -> (s, f x y))
+    .> join
+    .> Seq.filter (fst .> (/=None))
+    .> Seq.partition (fst .> (==Black))
+    .> \ (black, white) ->
+        let posWithBlack = foldr' (update Black) Pos.empty (snd <$> black)
+        in foldr' (update White) posWithBlack (snd <$> white)
+
+-- I feel so-o-o proud for figuring this out
+-- | Computes longHash of pos and its 7 possible transfomations, then takes the smallest one (i.e. it respects mirroring)
+longHashM :: Pos -> Integer
+longHashM p =
+    transformations      -- [Int -> Int -> Point]
+    <&> flip transform p -- [Pos]
+    <&> longHash         -- [Integer]
+    |>  minimum
+    where
+        f = Point.fromIntPartial
+        transformations :: NonEmpty (Int -> Int -> Point)
+        transformations = fromMaybe (error "impossible") <| nonEmpty [ -- dependent types...
+            f
+            , flip f
+            , \x y -> f x (14-y)
+            , \x y -> f y (14-x)
+            , \x y -> f (14-x) y
+            , \x y -> f (14-y) x
+            , \x y -> f (14-x) (14-y)
+            , \x y -> f (14-y) (14-x)
+            ] 
+
 instance Hashable Pos where
-    hashWithSalt salt pos = hashWithSalt salt (Pos.toInteger pos)
-    -- TODO: make it work with mirrored / rotated positions. That would require a different toInteger implementation
+    hashWithSalt salt = hashWithSalt salt <. longHashM
 
 -- | Represents an empty board
 empty :: Pos
@@ -116,7 +153,7 @@ fromGetpos = (<> "a") .> foldl' f ("", []) .> snd .> sequence <.>> magic where
 toText :: (Point -> Move -> Text) -> Pos -> Text
 toText f =
     unwrap
-    .> mapxy (\x y -> f <| fromJust <| Point.fromInt x y ) -- gib deptypes -- I could have proved these indices are always valid
+    .> mapxy (\x y -> f <| Point.fromIntPartial x y ) -- gib deptypes -- I could have proved these indices are always valid
     .> Seq.mapWithIndex (\i -> foldl' (<>) <| align <| i + 1)
     .> Seq.reverse
     .> (Seq.|> letters)
@@ -128,9 +165,6 @@ toText f =
             | otherwise = " " <> show i
 
         letters = "   a b c d e f g h i j k l m n o"
-
-        fromJust (Just x) = x -- eww
-        fromJust Nothing = error "bruh"
 
 -- | Pretty-print a position
 printPos :: Pos -> IO ()
