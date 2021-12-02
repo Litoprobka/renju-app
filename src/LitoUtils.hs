@@ -3,10 +3,11 @@ module LitoUtils where
 import Universum
 import Flow
 import qualified Data.Sequence as Seq
-import Monomer.Common.Lens (HasX(x))
+
+-- various utility functions that don't belong anywhere. Module name is LitoUtils so it doesn't conflict with anything
 
 infixl 9 <.>>
--- | lifed function composition
+-- | lifted function composition
 (<.>>) :: Functor f => (a -> f b) -> (b -> c) -> (a -> f c)
 (<.>>) f1 f2 x = f1 x <&> f2
 
@@ -16,6 +17,3 @@ mapxy f =
 
 map2d :: (a -> b) -> Seq (Seq a) -> Seq (Seq b)
 map2d f = mapxy (\_ _ -> f)
-
--- | for testing purposes only
-

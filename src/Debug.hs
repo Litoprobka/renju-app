@@ -7,7 +7,8 @@ import qualified Pos
 import qualified Point
 import qualified Lib
 
--- chances are there is a better way to do it
+import Data.Text(pack)
+-- chances are there is a better way to make debug-only functions, but this works so far
 
 fromJust (Just x) = x
 fromJust Nothing = error "Attempted to apply fromJust to Nothing"
@@ -31,4 +32,5 @@ printp = Pos.printPos
 
 printl = Lib.printLibAt
 
+ladd :: Text -> Lib.Lib -> Lib.Lib
 ladd = Lib.add <. gg

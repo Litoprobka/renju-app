@@ -1,6 +1,7 @@
 module Pos (Move(..), Pos, Pos.empty, unwrap, adjust, update, moveAt, moveCount, makeMove, makeMove', fromList, fromGetpos, Pos.toText, printPos) where
 
 import Universum
+-- import Universum.Container
 import Flow
 import LitoUtils
 
@@ -9,7 +10,6 @@ import qualified Point
 
 import Data.Sequence ((!?))
 import qualified Data.Sequence as Seq
-import Data.Text (pack, unpack)
 
 -- | Represents a move on the board
 data Move
@@ -19,11 +19,9 @@ data Move
     deriving (Show, Eq, Ord, Enum)
 
 -- | A 15x15 matrix of moves. Gimme dependent types...
-newtype Pos = Pos (Seq (Seq Move)) deriving Show -- I should a type different from Seq for this
-                                                 -- Seq seems to be a decent choice after all. The other option is Vector
-                                                 -- y then x, not the other way around!
-instance Eq Pos where -- TODO: mirrored positions
-    (Pos p1) == (Pos p2) = p1 == p2
+newtype Pos = Pos (Seq (Seq Move)) deriving (Show, Eq)  -- I should a type different from Seq for this
+                                                        -- Seq seems to be a decent choice after all. The other option is Vector
+                                                        -- y then x, not the other way around!
 
 toInteger :: Pos -> Integer
 toInteger =
@@ -31,12 +29,9 @@ toInteger =
     .> join
     .> Seq.foldrWithIndex (\i move acc -> acc + 3^i * (fromEnum .> fromIntegral) move) 0
 
-instance Ord Pos where
-    compare = compare `on` Pos.toInteger
-
--- instance Hashable Position where -- if I decide to use a HashMap instead
-    -- the simplest way to do this would be to hash that huge toInteger (~45 bytes) used for comparison
-    -- UPD: turns out Integer is hashable
+instance Hashable Pos where
+    hashWithSalt salt pos = hashWithSalt salt (Pos.toInteger pos)
+    -- TODO: make it work with mirrored / rotated positions. That would require a different toInteger implementation
 
 -- | Represents an empty board
 empty :: Pos
@@ -107,7 +102,7 @@ fromGetpos = (<> "a") .> foldl' f ("", []) .> snd .> sequence <.>> magic where
 
     f :: (String, [Maybe Point]) -> Char -> (String, [Maybe Point])
     f (acc, moves) c
-        | c >= 'a' && c <= 'o' = ([c], if acc /= "" then Point.fromText (pack acc) : moves else moves)       -- if we encounter a char, try to parse the current accumulator to Point, then append the result to moves. Reset the accumulator.
+        | c >= 'a' && c <= 'o' = ([c], if acc /= "" then Point.fromText (Universum.toText acc) : moves else moves)       -- if we encounter a char, try to parse the current accumulator to Point, then append the result to moves. Reset the accumulator.
         | otherwise = (acc ++ [c], moves)                                                                    -- if we encounter a digit, add it to the accumulator.
 
     magic :: [Point] -> Pos

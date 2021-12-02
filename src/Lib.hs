@@ -10,12 +10,10 @@ import Pos (Pos, Move(..), moveCount)
 import qualified Pos
 
 import qualified Data.Sequence as Seq
-import Data.Map.Strict (Map, (!?))
-import qualified Data.Map.Strict as Map -- should I use a HashMap instead?
-import Data.Text
+import qualified Data.HashMap.Strict as HashMap
 
 -- | Additional info for a position, such as comments
-data MoveInfo = MoveInfo {
+newtype MoveInfo = MoveInfo {
     comment :: Text
     -- other stuff like board text, previous move (if needed)
 }
@@ -23,7 +21,7 @@ data MoveInfo = MoveInfo {
 -- instance Default MoveInfo where 
 defMoveInfo = MoveInfo ""
 
-type LibLayer = Map Pos MoveInfo
+type LibLayer = HashMap Pos MoveInfo
 type UnwrappedLib = Seq LibLayer
 -- | Represents a database file
 newtype Lib = Lib UnwrappedLib -- again, I need a static-length array type
@@ -31,7 +29,7 @@ newtype Lib = Lib UnwrappedLib -- again, I need a static-length array type
 -- | Represents an empty database
 empty :: Lib
 empty =
-    Seq.replicate 225 Map.empty
+    Seq.replicate 225 HashMap.empty
     |> Lib
 
 -- | An fmap-like function that unwraps a lib and wraps it back, not exported
@@ -42,13 +40,13 @@ fmapLib f (Lib l) =
 -- | add a position to the lib
 add :: Pos -> Lib -> Lib
 add pos =
-    Seq.adjust (Map.insert pos defMoveInfo) (moveCount pos) -- something screams that I need a container with fast random access
+    Seq.adjust (HashMap.insert pos defMoveInfo) (moveCount pos) -- something screams that I need a container with fast random access
     |> fmapLib
 
 -- | removes a position from the lib
 remove :: Pos -> Lib -> Lib
 remove pos =
-    Seq.adjust (Map.delete pos) (moveCount pos)
+    Seq.adjust (HashMap.delete pos) (moveCount pos)
     |> fmapLib
 
 nextMoveHelper :: (Pos -> LibLayer -> a) -> Point -> Pos -> Lib -> a
@@ -56,10 +54,10 @@ nextMoveHelper f point pos (Lib lib) = lib `Seq.index` Pos.moveCount newPos |> f
     newPos = Pos.makeMove' point pos 
 
 nextMoveExists :: Point -> Pos -> Lib -> Bool -- not sure about the argument order, maybe Point and Pos should be the other way around
-nextMoveExists = nextMoveHelper Map.member
+nextMoveExists = nextMoveHelper HashMap.member
 
 getNextMove :: Point -> Pos -> Lib -> Maybe MoveInfo
-getNextMove = nextMoveHelper Map.lookup
+getNextMove = nextMoveHelper HashMap.lookup
 
 printLibAt :: Pos -> Lib -> IO ()
 printLibAt pos lib =

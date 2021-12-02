@@ -27,7 +27,8 @@ dependencies:
   - text
   - text-show
   - universum >= 1.7.2 && < 2
-  - containers # used in Position.hs
+  - containers
+  - unordered-containers
 
 executables:
   app:
