@@ -1,4 +1,4 @@
-module Pos (Move(..), Pos, Pos.empty, transform, longHash, longHashM, unwrap, adjust, update, moveAt, moveCount, makeMove, makeMove', fromList, fromGetpos, Pos.toText, printPos) where
+module Pos (Move(..), Pos, Pos.empty, transform, longHash, longHashM, unwrap, adjust, update, moveAt, moveCount, makeMove, makeMove', fromMoveList, fromPointList, fromGetpos, Pos.toText, printPos) where
 
 import Universum
 -- import Universum.Container
@@ -123,8 +123,8 @@ makeMove' :: Point -> Pos -> Pos
 makeMove' xy p = fromMaybe p <| makeMove xy p
 
 -- | Make a Position from a list of lists. Validates only the board size, not the amount of black/white stones
-fromList :: [[Move]] -> Maybe Pos
-fromList moves =
+fromMoveList :: [[Move]] -> Maybe Pos
+fromMoveList moves =
     if all (length .> (==15)) moves then
         Nothing
     else
@@ -133,18 +133,17 @@ fromList moves =
         |>  Seq.fromList
         |>  Pos
         |> Just
+-- slow-ish conversion from a list of Points to a Pos
+fromPointList :: [Point] -> Pos
+fromPointList = foldr' makeMove' Pos.empty
 
 fromGetpos :: Text -> Maybe Pos
-fromGetpos = (<> "a") .> foldl' f ("", []) .> snd .> sequence <.>> magic where
+fromGetpos = (<> "a") .> foldl' f ("", []) .> snd .> sequence <.>> fromPointList where
 
     f :: (String, [Maybe Point]) -> Char -> (String, [Maybe Point])
     f (acc, moves) c
         | c >= 'a' && c <= 'o' = ([c], if acc /= "" then Point.fromText (Universum.toText acc) : moves else moves)       -- if we encounter a char, try to parse the current accumulator to Point, then append the result to moves. Reset the accumulator.
         | otherwise = (acc ++ [c], moves)                                                                    -- if we encounter a digit, add it to the accumulator.
-
-    magic :: [Point] -> Pos
-    magic = -- slow-ish conversion from a list of moves to a Pos
-        foldr' makeMove' Pos.empty
 
 
 -- I lowkey feel proud for implementing <.>> 

@@ -9,6 +9,7 @@ import LitoUtils
 import qualified Pos
 import qualified Lib
 import Debug
+import CLI
 
 import Control.Lens hiding ((^.), (|>), (<|))
 import Data.Text (Text)
@@ -67,8 +68,10 @@ handleEvent wenv node model evt = case evt of
   AppInit -> []
   AppIncrease -> [Model (model & clickCount +~ 1)]
 
-main :: IO ()
-main = do
+main = startRepl
+
+mainM :: IO ()
+mainM = do
   startApp model handleEvent buildUI config
   where
     config = [

@@ -19,6 +19,7 @@ extra-source-files:
 executable app
   main-is: Main.hs
   other-modules:
+      CLI
       Debug
       Lib
       LitoUtils
