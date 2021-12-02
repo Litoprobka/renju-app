@@ -1,0 +1,38 @@
+name:                renju-app # placeholder name
+version:             0.1.0.0
+#synopsis:
+#description:
+homepage:            https://github.com/githubuser/monomer-starter#readme
+license:             BSD3
+author:              Litoprobka
+#maintainer:          example@example.com
+copyright:           2021 Litoprobka
+#category:
+extra-source-files:
+- README.md
+
+default-extensions:
+- OverloadedStrings
+- NoImplicitPrelude
+
+dependencies:
+  - name: base
+    mixin: 
+    - hiding (System.IO.Unsafe)
+    version: ">= 4.8 && < 5"
+  - data-default
+  - flow
+  - lens
+  - monomer
+  - text
+  - text-show
+  - universum >= 1.7.2 && < 2
+  - containers # used in Position.hs
+
+executables:
+  app:
+    source-dirs:      src
+    main:             Main.hs
+    ghc-options:
+    - -fwarn-incomplete-patterns
+    - -threaded
