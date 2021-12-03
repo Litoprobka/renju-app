@@ -30,7 +30,7 @@ tt = foldl' (flip mmt) Pos.empty
 
 printp = Pos.printPos
 
-printl = Lib.printLibAt
+printl = Lib.printLib
 
 ladd :: Text -> Lib.Lib -> Lib.Lib
-ladd = Lib.add <. gg
+ladd = Lib.addMove <. pt
