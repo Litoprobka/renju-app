@@ -1,11 +1,14 @@
+{-# LANGUAGE LambdaCase #-}
 module MoveSeq where
 
 import Universum
 import Flow
 import LitoUtils
 
+import Pos(Stone(..), fromMoveList, toText)
 import Move(Move)
 import qualified Move
+import Data.List (elemIndex)
 
 -- A different implementation of Pos. Preserves move order, so it can be used in Lib; should be faster to hash as well.
 newtype MoveSeq = MoveSeq [Move] deriving Show -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
@@ -23,7 +26,7 @@ longHash =
     where
         addHashPart :: Move -> (Integer, Integer) -> (Integer, Integer)
         addHashPart move (mult, result) =
-            (if mult == 1 then 2 else 1, mult * Move.hashPart move)
+            (if mult == 1 then 2 else 1, result + mult * Move.hashPart move)
 
 -- compare this to Pos.transform
 transform :: (Move -> Move) -> MoveSeq -> MoveSeq
@@ -50,10 +53,23 @@ unwrap (MoveSeq ms) = ms
 
 -- adjust / update functions are not needed.
 
+back :: MoveSeq -> MoveSeq
+back (MoveSeq []) = MoveSeq []
+back (MoveSeq (m : ms)) = MoveSeq ms
+
 moveCount :: MoveSeq -> Int
 moveCount =
     unwrap
     .> length
+
+stoneAt :: Move -> MoveSeq -> Stone
+stoneAt move =
+    unwrap
+    .> elemIndex move
+    .> \case
+        Nothing -> None
+        Just i | odd i -> Black
+               | otherwise -> White
 
 -- | Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
 makeMove :: Move -> MoveSeq -> Maybe MoveSeq
@@ -68,3 +84,7 @@ makeMove' move =
 
 fromGetpos :: Text -> Maybe MoveSeq
 fromGetpos = fromGetpos' <.>> MoveSeq
+
+toText :: (Move -> Stone -> Text) -> MoveSeq -> Text
+toText f moves =
+    Pos.toText f <| fromMoveList <| unwrap <| moves

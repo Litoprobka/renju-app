@@ -6,12 +6,13 @@ import Flow
 import Move (Move)
 import qualified Move
 
-import Pos (Pos, Stone(..), moveCount)
-import qualified Pos
+import Pos (Pos, Stone(..))
+
+import MoveSeq (MoveSeq)
+import qualified MoveSeq
 
 import qualified Data.Sequence as Seq
 import qualified Data.HashMap.Strict as HashMap
-import Data.Set (powerSet)
 
 -- | Additional info for a position, such as comments
 newtype MoveInfo = MoveInfo {
@@ -22,63 +23,62 @@ newtype MoveInfo = MoveInfo {
 -- instance Default MoveInfo where 
 defMoveInfo = MoveInfo ""
 
-type LibLayer = HashMap Pos MoveInfo
+type LibLayer = HashMap MoveSeq MoveInfo
 -- | Represents a database file
 data Lib = Lib {
       lib :: Seq LibLayer
-    , moves :: [Move]
+    , moves :: MoveSeq
 }
 
 -- | Represents an empty database
 empty :: Lib
 empty =
-    Lib (Seq.replicate 225 HashMap.empty) [] 
+    Lib (Seq.replicate 225 HashMap.empty) MoveSeq.empty
 
 back :: Lib -> Lib
-back l@(Lib _ []) = l
-back l@(Lib _ (m:ms)) = l { moves = ms }
+back l = l { moves = MoveSeq.back <| moves l }
 
 -- | add a position to the lib
-addPos :: Pos -> Lib -> Lib
-addPos pos l =
-    l { lib = lib l |> Seq.adjust (HashMap.insert pos defMoveInfo) (moveCount pos) } -- seems like it's time to learn lens
+addPos :: MoveSeq -> Lib -> Lib
+addPos pos l
+    | pos `HashMap.member` (lib l `Seq.index` MoveSeq.moveCount pos) = l
+    | otherwise =
+        l { lib = lib l |> Seq.adjust (HashMap.insert pos defMoveInfo) (MoveSeq.moveCount pos) } -- seems like it's time to learn lens
 
 -- | add a move to the lib
 addMove :: Move -> Lib -> Lib
-addMove move l@(Lib lib moves)
-    | move `elem` moves = l -- if the current position already has this move, do nothing
-    | otherwise = addPos pos l { moves = newMoves }
+addMove move l =
+    addPos pos l { moves = pos }
     where
-        newMoves = move : moves
-        pos = Pos.fromMoveList newMoves
+        pos = MoveSeq.makeMove' move <| moves l
 
 -- | removes a position from the lib
-removePos :: Pos -> Lib -> Lib
-removePos pos l =
-    l { lib = lib l |> Seq.adjust (HashMap.delete pos) (moveCount pos) }
+removePos :: MoveSeq -> Lib -> Lib
+removePos pos l
+    | MoveSeq.moveCount pos == 0 = l
+    | otherwise = l { lib = lib l |> Seq.adjust (HashMap.delete pos) (MoveSeq.moveCount pos) }
 
 -- | removes current position from the lib
 remove :: Lib -> Lib
-remove l@(Lib _ []) = l
-remove l = l |> removePos (Pos.fromMoveList <| moves l) |> back
+remove l = l |> removePos (moves l) |> back
 
-nextMoveHelper :: (Pos -> LibLayer -> a) -> Move -> Pos -> Lib -> a
-nextMoveHelper f move pos l = lib l `Seq.index` Pos.moveCount newPos |> f newPos where
-    newPos = Pos.makeMove' move pos 
+nextMoveHelper :: (MoveSeq -> LibLayer -> a) -> Move -> MoveSeq -> Lib -> a
+nextMoveHelper f move pos l = lib l `Seq.index` MoveSeq.moveCount newPos |> f newPos where
+    newPos = MoveSeq.makeMove' move pos
 
-nextMoveExists :: Move -> Pos -> Lib -> Bool -- not sure about the argument order, maybe Move and Pos should be the other way around
+nextMoveExists :: Move -> MoveSeq -> Lib -> Bool -- not sure about the argument order, maybe Move and Pos should be the other way around
 nextMoveExists = nextMoveHelper HashMap.member
 
-getNextMove :: Move -> Pos -> Lib -> Maybe MoveInfo
+getNextMove :: Move -> MoveSeq -> Lib -> Maybe MoveInfo
 getNextMove = nextMoveHelper HashMap.lookup
 
 printLib :: Lib -> IO ()
 printLib lib =
     pos
-    |> Pos.toText char
+    |> MoveSeq.toText char
     |> putText
     where
-        pos = Pos.fromMoveList <| moves lib
+        pos = moves lib
 
         char p None  = if nextMoveExists p pos lib then " +" else " ."
         char _ Black = " x"
@@ -87,7 +87,7 @@ printLib lib =
 -- some UI-related functions
 
 transform :: (Move -> Move) -> Lib -> Lib
-transform f l = l { moves = moves l <&> f }
+transform f l = l { moves = MoveSeq.transform f <| moves l }
 
 mirror :: Lib -> Lib
 mirror = transform (\ p -> Move.fromIntPartial (14 - Move.x p) (Move.y p))

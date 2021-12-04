@@ -1,4 +1,4 @@
-module Pos (Stone(..), Pos, Pos.empty, transform, longHash, longHashM, unwrap, update, moveAt, moveCount, makeMove, makeMove', fromMoveList, fromStoneList, fromGetpos, Pos.toText, printPos) where
+module Pos (Stone(..), Pos, Pos.empty, transform, longHash, longHashM, unwrap, update, stoneAt, moveCount, makeMove, makeMove', fromMoveList, fromStoneList, fromGetpos, Pos.toText, printPos) where
 
 import Universum
 -- import Universum.Container
@@ -74,7 +74,6 @@ fmapPos f =
     .> f
     .> Pos
 
-
 -- | Replace a move at given coordinates
 update :: Stone -> Move -> Pos -> Pos
 update move xy =
@@ -88,13 +87,13 @@ moveCount =
     <.>> sum
      .>  sum
 
-moveAt :: Move -> Pos -> Stone
-moveAt xy (Pos p) = p `Seq.index` Move.y xy `Seq.index` Move.x xy -- using unsafe functions because Pos is validated on construction
+stoneAt :: Move -> Pos -> Stone
+stoneAt xy (Pos p) = p `Seq.index` Move.y xy `Seq.index` Move.x xy -- using unsafe functions because Pos is validated on construction
 
 -- | Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
 makeMove :: Move -> Pos -> Maybe Pos
 makeMove move pos
-    | moveAt move pos == None = update nextColor move pos |> Just
+    | stoneAt move pos == None = update nextColor move pos |> Just
     | otherwise = Nothing
     where
         nextColor = if even <| moveCount pos then Black else White

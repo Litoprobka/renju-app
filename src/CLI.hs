@@ -3,8 +3,6 @@ module CLI where
 import Universum
 import Flow
 
-import Pos (Stone, makeMove')
-import qualified Pos
 import Move (Move)
 import Lib
 import qualified Move
