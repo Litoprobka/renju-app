@@ -4,7 +4,7 @@ import Universum hiding ((<.))
 import Flow
 
 import qualified Pos
-import qualified Point
+import qualified Move
 import qualified Lib
 
 import Data.Text(pack)
@@ -13,9 +13,9 @@ import Data.Text(pack)
 fromJust (Just x) = x
 fromJust Nothing = error "Attempted to apply fromJust to Nothing"
 
-pp x y = fromJust <| Point.fromInt x y
+pp x y = fromJust <| Move.fromInt x y
 
-pt = fromJust <. Point.fromText
+pt = fromJust <. Move.fromText
 
 gg = fromJust <. Pos.fromGetpos
 

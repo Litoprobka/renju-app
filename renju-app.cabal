@@ -23,7 +23,7 @@ executable app
       Debug
       Lib
       LitoUtils
-      Point
+      Move
       Pos
       Paths_renju_app
   hs-source-dirs:

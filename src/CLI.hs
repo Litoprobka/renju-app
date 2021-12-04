@@ -3,11 +3,11 @@ module CLI where
 import Universum
 import Flow
 
-import Pos (Move, makeMove')
+import Pos (Stone, makeMove')
 import qualified Pos
-import Point (Point)
+import Move (Move)
 import Lib
-import qualified Point
+import qualified Move
 
 -- very simple console-based UI that works with a single Lib
 -- I'm writing this to figure out what the GUI would need
@@ -26,7 +26,7 @@ repl l = do
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
 
-        _ -> case Point.fromText text of
+        _ -> case Move.fromText text of
           Nothing -> putTextLn "unknown command" >> repl l
           Just p  -> repl <| addMove p l
 
