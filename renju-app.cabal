@@ -24,6 +24,7 @@ executable app
       Lib
       LitoUtils
       Move
+      MoveSeq
       Pos
       Paths_renju_app
   hs-source-dirs:

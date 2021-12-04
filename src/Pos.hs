@@ -1,4 +1,4 @@
-module Pos (Stone(..), Pos, Pos.empty, transform, longHash, longHashM, unwrap, adjust, update, moveAt, moveCount, makeMove, makeMove', fromMoveList, fromStoneList, fromGetpos, Pos.toText, printPos) where
+module Pos (Stone(..), Pos, Pos.empty, transform, longHash, longHashM, unwrap, update, moveAt, moveCount, makeMove, makeMove', fromMoveList, fromStoneList, fromGetpos, Pos.toText, printPos) where
 
 import Universum
 -- import Universum.Container
@@ -9,7 +9,6 @@ import Move (Move)
 import qualified Move
 
 import qualified Data.Sequence as Seq
-import qualified Data.Tree as Seq
 
 -- | Represents a stone
 data Stone
@@ -26,7 +25,7 @@ newtype Pos = Pos (Seq (Seq Stone)) deriving Show    -- I should a type differen
 instance Eq Pos where
     (==) = (==) `on` longHashM
 
--- | Creates an Integer 'hash' of a position.  longHash pos /= longHash (mirror Pos) 
+-- | Creates an Integer 'hash' of a position. longHash does not respect rotation / mirroring
 longHash :: Pos -> Integer
 longHash =
     unwrap
@@ -34,10 +33,10 @@ longHash =
     .> Seq.foldrWithIndex (\i move acc -> acc + 3^i * (fromEnum .> fromIntegral) move) 0
 
 -- slow af
-transform :: (Int -> Int -> Move) -> Pos -> Pos
+transform :: (Move -> Move) -> Pos -> Pos
 transform f =
     unwrap 
-    .> mapxy (\x y s -> (s, f x y))
+    .> mapxy (\x y s -> (s, f <| Move.fromIntPartial x y))
     .> join
     .> Seq.filter (fst .> (/=None))
     .> Seq.partition (fst .> (==Black))
@@ -49,23 +48,10 @@ transform f =
 -- | Computes longHash of pos and its 7 possible transfomations, then takes the smallest one (i.e. it respects mirroring)
 longHashM :: Pos -> Integer
 longHashM p =
-    transformations      -- [Int -> Int -> Move]
+    Move.transformations -- [Move -> Move]
     <&> flip transform p -- [Pos]
     <&> longHash         -- [Integer]
-    |>  minimum
-    where
-        f = Move.fromIntPartial
-        transformations :: NonEmpty (Int -> Int -> Move)
-        transformations = fromMaybe (error "impossible") <| nonEmpty [ -- dependent types...
-            f
-            , flip f
-            , \x y -> f x (14-y)
-            , \x y -> f y (14-x)
-            , \x y -> f (14-x) y
-            , \x y -> f (14-y) x
-            , \x y -> f (14-x) (14-y)
-            , \x y -> f (14-y) (14-x)
-            ] 
+    |>  minimum 
 
 instance Hashable Pos where
     hashWithSalt salt = hashWithSalt salt <. longHashM
@@ -88,11 +74,6 @@ fmapPos f =
     .> f
     .> Pos
 
--- | Apply 'f' to a move at given coordinates
-adjust :: (Stone -> Stone) -> Move -> Pos -> Pos
-adjust f move =
-    Seq.adjust' (Seq.adjust' f (Move.x move)) (Move.y move)
-    |> fmapPos
 
 -- | Replace a move at given coordinates
 update :: Stone -> Move -> Pos -> Pos
@@ -120,7 +101,7 @@ makeMove move pos
 
 -- | Like 'makeMove', but returns the same position if the coordinates are taken
 makeMove' :: Move -> Pos -> Pos
-makeMove' xy p = fromMaybe p <| makeMove xy p
+makeMove' move = tryApply (makeMove move)
 
 -- | Make a Position from a list of lists. Validates only the board size, not the amount of black/white stones
 fromStoneList :: [[Stone]] -> Maybe Pos
@@ -138,13 +119,7 @@ fromMoveList :: [Move] -> Pos
 fromMoveList = foldr' makeMove' Pos.empty
 
 fromGetpos :: Text -> Maybe Pos
-fromGetpos = (<> "a") .> foldl' f ("", []) .> snd .> sequence <.>> fromMoveList where
-
-    f :: (String, [Maybe Move]) -> Char -> (String, [Maybe Move])
-    f (acc, moves) c
-        | c >= 'a' && c <= 'o' = ([c], if acc /= "" then Move.fromText (Universum.toText acc) : moves else moves)       -- if we encounter a char, try to parse the current accumulator to Move, then append the result to moves. Reset the accumulator.
-        | otherwise = (acc ++ [c], moves)                                                                    -- if we encounter a digit, add it to the accumulator.
-
+fromGetpos = fromGetpos' <.>> fromMoveList
 
 -- I lowkey feel proud for implementing <.>> 
 

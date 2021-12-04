@@ -1,4 +1,4 @@
-module Move (Move, fromInt, fromIntPartial, fromText, x, y) where
+module Move (Move, fromInt, fromIntPartial, fromText, hashPart, transformations, x, y) where
 
 import Universum
 import Flow
@@ -15,7 +15,7 @@ fromInt x y
     | validate x && validate y =
         (x, y)
         |> Move
-        |> Just 
+        |> Just
     | otherwise = Nothing
     where
         validate x = x `elem` [0..14] -- GHC optimises this away, right?
@@ -31,15 +31,32 @@ fromText t =
         (xCoord:yCoord) -> do
             x <- xCoord `elemIndex` "abcdefghijklmno"
             y <- readMaybe yCoord
-            fromInt x (y-1) 
-        _ -> Nothing 
+            fromInt x (y-1)
+        _ -> Nothing
+
+-- | Used to hash MoveSeq
+hashPart :: Move -> Integer
+hashPart m =
+    3^(x m + y m * 15)
+
+transformations :: NonEmpty (Move -> Move)
+transformations = map (\f (Move m) -> Move <| f m) <| fromMaybe (error "impossible") <| nonEmpty [ -- dependent types...
+    id
+    , first (14 -)
+    , second (14 -)
+    , bimap (14 -) (14 -)
+    , swap
+    , swap .> first (14 -)
+    , swap .> second (14 -)
+    , swap .> bimap (14 -) (14 -)
+    ]
 
 -- | Get the X coordinate of a Move
 x :: Move -> Int
-x (Move p) = fst p
--- x (Move p) = p `mod` 15 |> fromIntegral
+x (Move m) = fst m
+-- x (Move m) = m `mod` 15 |> fromIntegral
 
 -- | Get the Y coordinate of a Move
 y :: Move -> Int
-y (Move p) = snd p
--- y (Move p) = p `div` 15 |> fromIntegral
+y (Move m) = snd m
+-- y (Move m) = m `div` 15 |> fromIntegral
