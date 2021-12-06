@@ -11,7 +11,7 @@ import qualified Move
 import Data.List (elemIndex)
 
 -- A different implementation of Pos. Preserves move order, so it can be used in Lib; should be faster to hash as well.
-newtype MoveSeq = MoveSeq [Move] deriving Show -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
+newtype MoveSeq = MoveSeq { getMoves :: [Move] } deriving Show -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
                                                -- this representation works only for Renju/Gomoku (i.e. not Pente), because it assumes every odd move is black and every even move is white
 
 instance Eq MoveSeq where
@@ -20,7 +20,7 @@ instance Eq MoveSeq where
 -- | Creates an Integer 'hash' of a position. longHash does not respect rotation / mirroring 
 longHash :: MoveSeq -> Integer
 longHash =
-    unwrap
+    getMoves
     .> foldr' addHashPart (1, 0)
     .> snd
     where
@@ -31,7 +31,7 @@ longHash =
 -- compare this to Pos.transform
 transform :: (Move -> Move) -> MoveSeq -> MoveSeq
 transform f =
-    unwrap
+    getMoves
     <.>> f
     .> MoveSeq 
 
@@ -48,8 +48,8 @@ instance Hashable MoveSeq where
 empty :: MoveSeq
 empty = MoveSeq []
 
-unwrap :: MoveSeq -> [Move]
-unwrap (MoveSeq ms) = ms
+isEmpty :: MoveSeq -> Bool
+isEmpty = (==MoveSeq.empty)
 
 -- adjust / update functions are not needed.
 
@@ -59,12 +59,12 @@ back (MoveSeq (m : ms)) = MoveSeq ms
 
 moveCount :: MoveSeq -> Int
 moveCount =
-    unwrap
+    getMoves
     .> length
 
 stoneAt :: Move -> MoveSeq -> Stone
 stoneAt move =
-    unwrap
+    getMoves
     .> elemIndex move
     .> \case
         Nothing -> None
@@ -85,6 +85,18 @@ makeMove' move =
 fromGetpos :: Text -> Maybe MoveSeq
 fromGetpos = fromGetpos' <.>> MoveSeq
 
+-- | Apply a function to each Move that is not present in a given position
+mapEmpty :: (Move -> a) -> MoveSeq -> [a]
+mapEmpty f moves =
+    [0..224]
+    <&> Move.fromBytePartial
+     &  filter (not . (`elem` getMoves moves))
+    <&> f
+
+-- | Apply a function to all positions that can be derived from the current one
+mapNext :: (MoveSeq -> a) -> MoveSeq -> [a]
+mapNext f moves = mapEmpty (f <. (`MoveSeq.makeMove'` moves)) moves
+
 toText :: (Move -> Stone -> Text) -> MoveSeq -> Text
 toText f moves =
-    Pos.toText f <| fromMoveList <| unwrap <| moves
+    Pos.toText f <| fromMoveList <| getMoves <| moves

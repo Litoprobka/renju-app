@@ -19,8 +19,9 @@ repl l = do
     text <- getLine
     case text of
         "quit" -> pure l
-        "back" -> repl <| back l 
-        "remove" -> repl <| remove l 
+        "back" -> repl <| back l
+        "remove" -> repl <| remove l
+        "removeR" -> repl <| removeR (moves l) l
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
 

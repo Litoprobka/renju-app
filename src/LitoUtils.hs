@@ -32,3 +32,13 @@ fromGetpos' = (<> "a") .> foldl' f ("", []) .> snd .> sequence where
     f (acc, moves) c
         | c >= 'a' && c <= 'o' = ([c], if acc /= "" then Move.fromText (Universum.toText acc) : moves else moves) -- if we encounter a char, try to parse the current accumulator to Move, then append the result to moves. Reset the accumulator.
         | otherwise = (acc ++ [c], moves)                                                                         -- if we encounter a digit, add it to the accumulator.
+
+applyAll :: [a -> a] -> a -> a
+applyAll = foldl' (.>) id
+
+-- Given a predicate p, function f and value x: if p x is true, return f x; otherwise, return x
+applyIf :: (a -> Bool) -> (a -> a) -> a -> a
+applyIf p f x = if p x then f x else x
+
+applyIf2 :: (a -> b -> Bool) -> (a -> b -> b) -> a -> b -> b -- am I going insane?
+applyIf2 p f x = applyIf (p x) (f x)

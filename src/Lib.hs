@@ -7,6 +7,7 @@ import Move (Move)
 import qualified Move
 
 import Pos (Pos, Stone(..))
+import LitoUtils
 
 import MoveSeq (MoveSeq)
 import qualified MoveSeq
@@ -41,7 +42,7 @@ back l = l { moves = MoveSeq.back <| moves l }
 -- | add a position to the lib
 addPos :: MoveSeq -> Lib -> Lib
 addPos pos l
-    | pos `HashMap.member` (lib l `Seq.index` MoveSeq.moveCount pos) = l
+    | exists pos l = l
     | otherwise =
         l { lib = lib l |> Seq.adjust (HashMap.insert pos defMoveInfo) (MoveSeq.moveCount pos) } -- seems like it's time to learn lens
 
@@ -55,22 +56,33 @@ addMove move l =
 -- | removes a position from the lib
 removePos :: MoveSeq -> Lib -> Lib
 removePos pos l
-    | MoveSeq.moveCount pos == 0 = l
+    | MoveSeq.isEmpty pos = l
     | otherwise = l { lib = lib l |> Seq.adjust (HashMap.delete pos) (MoveSeq.moveCount pos) }
 
+-- | removes a position and all derivable positions from the lib
+removeR :: MoveSeq -> Lib -> Lib
+removeR pos l
+    | MoveSeq.isEmpty pos = l
+    | otherwise = 
+        l
+        |> removePos pos
+        |> applyAll (MoveSeq.mapNext (applyIf2 isOrphan removeR) pos)
+        where
+            isOrphan :: MoveSeq -> Lib -> Bool -- wip
+            isOrphan pos' l = exists pos' l
 -- | removes current position from the lib
 remove :: Lib -> Lib
 remove l = l |> removePos (moves l) |> back
 
-nextMoveHelper :: (MoveSeq -> LibLayer -> a) -> Move -> MoveSeq -> Lib -> a
-nextMoveHelper f move pos l = lib l `Seq.index` MoveSeq.moveCount newPos |> f newPos where
-    newPos = MoveSeq.makeMove' move pos
+-- | given a function that takes a MoveSeq and LibLayer, apply it to correct LibLayer of a Lib
+libLayerHelper :: (MoveSeq -> LibLayer -> a) -> MoveSeq -> Lib -> a
+libLayerHelper f pos l = lib l `Seq.index` MoveSeq.moveCount pos |> f pos
 
-nextMoveExists :: Move -> MoveSeq -> Lib -> Bool -- not sure about the argument order, maybe Move and Pos should be the other way around
-nextMoveExists = nextMoveHelper HashMap.member
+exists :: MoveSeq -> Lib -> Bool -- not sure about the argument order, maybe Move and Pos should be the other way around
+exists = libLayerHelper HashMap.member
 
-getNextMove :: Move -> MoveSeq -> Lib -> Maybe MoveInfo
-getNextMove = nextMoveHelper HashMap.lookup
+getPos :: MoveSeq -> Lib -> Maybe MoveInfo
+getPos = libLayerHelper HashMap.lookup
 
 printLib :: Lib -> IO ()
 printLib lib =
@@ -80,7 +92,7 @@ printLib lib =
     where
         pos = moves lib
 
-        char p None  = if nextMoveExists p pos lib then " +" else " ."
+        char p None  = if exists (MoveSeq.makeMove' p pos) lib then " +" else " ."
         char _ Black = " x"
         char _ White = " o"
 

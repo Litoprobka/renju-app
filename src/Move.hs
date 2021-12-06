@@ -1,4 +1,4 @@
-module Move (Move, fromInt, fromIntPartial, fromText, hashPart, transformations, x, y) where
+module Move (Move, fromInt, fromIntPartial, fromText, fromBytePartial, hashPart, transformations, x, y) where
 
 import Universum
 import Flow
@@ -33,6 +33,14 @@ fromText t =
             y <- readMaybe yCoord
             fromInt x (y-1)
         _ -> Nothing
+
+fromBytePartial :: Int -> Move
+fromBytePartial i
+    | i > 224 = error "invalid x or y"
+    | otherwise =
+        i `divMod` 15
+        |> swap
+        |> Move
 
 -- | Used to hash MoveSeq
 hashPart :: Move -> Integer
