@@ -55,7 +55,7 @@ isEmpty = (==MoveSeq.empty)
 
 back :: MoveSeq -> MoveSeq
 back (MoveSeq []) = MoveSeq []
-back (MoveSeq (m : ms)) = MoveSeq ms
+back (MoveSeq (_ : ms)) = MoveSeq ms
 
 moveCount :: MoveSeq -> Int
 moveCount =

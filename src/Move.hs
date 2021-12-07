@@ -1,70 +1,80 @@
-module Move (Move, fromInt, fromIntPartial, fromText, fromBytePartial, hashPart, transformations, x, y) where
+{-# LANGUAGE TemplateHaskell #-}
 
-import Universum
+module Move (Move, fromInt, fromIntPartial, fromText, fromBytePartial, hashPart, transformations, getX, getY) where
+
+import Universum hiding (over, view, (^.))
+import Control.Lens hiding ((.>), (<|), (|>))
 import Flow
 
 import Data.List (elemIndex)
 
 -- | Represents a coordinate point on a board
-newtype Move = Move (Int, Int) deriving (Show, Eq, Ord)
---newtype Move = Point Word8 deriving (Show, Eq, Ord)
+data Move = Move 
+    { _x :: Int
+    , _y :: Int }
+    deriving (Show, Eq, Ord)
+
+makeLenses 'Move
 
 -- | Create a Move, checking that x and y are in [0..14]
 fromInt :: Int -> Int -> Maybe Move
-fromInt x y
-    | validate x && validate y =
-        (x, y)
-        |> Move
-        |> Just
+fromInt x' y'
+    | validate x' && validate y' =
+        Just <| Move x' y'
     | otherwise = Nothing
     where
-        validate x = x `elem` [0..14] -- GHC optimises this away, right?
+        validate coord = coord `elem` [0..14] -- GHC optimises this away, right?
 
 -- don't use this at home
 fromIntPartial :: Int -> Int -> Move
-fromIntPartial x y = fromMaybe (error "invalid x or y") (fromInt x y)
+fromIntPartial x' y' = fromMaybe (error "invalid x or y") (fromInt x' y')
 
 -- | Another way to create a Move
 fromText :: Text -> Maybe Move
 fromText t =
     case toList t of
         (xCoord:yCoord) -> do
-            x <- xCoord `elemIndex` "abcdefghijklmno"
-            y <- readMaybe yCoord
-            fromInt x (y-1)
+            x' <- xCoord `elemIndex` "abcdefghijklmno"
+            y' <- readMaybe yCoord
+            fromInt x' (y'-1)
         _ -> Nothing
 
 fromBytePartial :: Int -> Move
 fromBytePartial i
     | i > 224 = error "invalid x or y"
-    | otherwise =
-        i `divMod` 15
-        |> swap
-        |> Move
+    | otherwise = Move x' y' where
+        (x', y') = i `divMod` 15
+        
 
 -- | Used to hash MoveSeq
 hashPart :: Move -> Integer
 hashPart m =
-    3^(x m + y m * 15)
+    3^(m^.x + m^.y * 15)
 
 transformations :: NonEmpty (Move -> Move)
-transformations = map (\f (Move m) -> Move <| f m) <| fromMaybe (error "impossible") <| nonEmpty [ -- dependent types...
-    id
-    , first (14 -)
-    , second (14 -)
-    , bimap (14 -) (14 -)
-    , swap
-    , swap .> first (14 -)
-    , swap .> second (14 -)
-    , swap .> bimap (14 -) (14 -)
+transformations = fromMaybe (error "impossible") <| nonEmpty [ -- dependent types...
+        id
+        , invert x
+        , invert y
+        , invert x .> invert y 
+        , swapxy
+        , swapxy .> invert x 
+        , swapxy .> invert y  
+        , swapxy .> invert x .> invert y 
     ]
+    where
+        invert coord = over coord (14-)
+        swapxy (Move x' y') = Move y' x'
 
--- | Get the X coordinate of a Move
-x :: Move -> Int
-x (Move m) = fst m
--- x (Move m) = m `mod` 15 |> fromIntegral
+getX :: Move -> Int
+getX = _x
 
--- | Get the Y coordinate of a Move
-y :: Move -> Int
-y (Move m) = snd m
--- y (Move m) = m `div` 15 |> fromIntegral
+getY :: Move -> Int
+getY = _y
+{-
+getX :: Getter Move Int
+getX = to _x
+
+getY :: Getter Move Int
+getY = to _y
+-}

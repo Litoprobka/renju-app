@@ -77,7 +77,7 @@ fmapPos f =
 -- | Replace a move at given coordinates
 update :: Stone -> Move -> Pos -> Pos
 update move xy =
-    Seq.adjust' (Seq.update (Move.x xy) move) (Move.y xy)
+    Seq.adjust' (Seq.update (Move.getX xy) move) (Move.getY xy)
     |> fmapPos
 
 moveCount :: Pos -> Int
@@ -88,7 +88,7 @@ moveCount =
      .>  sum
 
 stoneAt :: Move -> Pos -> Stone
-stoneAt xy (Pos p) = p `Seq.index` Move.y xy `Seq.index` Move.x xy -- using unsafe functions because Pos is validated on construction
+stoneAt xy (Pos p) = p `Seq.index` Move.getY xy `Seq.index` Move.getX xy -- using unsafe functions because Pos is validated on construction
 
 -- | Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
 makeMove :: Move -> Pos -> Maybe Pos

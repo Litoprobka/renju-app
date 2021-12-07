@@ -1,12 +1,15 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Lib where
 
-import Universum
+import Universum hiding (over, view, (^.), (%~), set) -- Universum re-exports microlens (but not microlens-th), while Monomer depends on lens. Ewww...
+import Control.Lens hiding ((.>), (<.), (<|), (|>), transform)
 import Flow
 
 import Move (Move)
 import qualified Move
 
-import Pos (Pos, Stone(..))
+import Pos (Stone(..))
 import LitoUtils
 
 import MoveSeq (MoveSeq)
@@ -22,14 +25,17 @@ newtype MoveInfo = MoveInfo {
 }
 
 -- instance Default MoveInfo where 
+defMoveInfo :: MoveInfo
 defMoveInfo = MoveInfo ""
 
 type LibLayer = HashMap MoveSeq MoveInfo
 -- | Represents a database file
 data Lib = Lib {
-      lib :: Seq LibLayer
-    , moves :: MoveSeq
+      _lib :: Seq LibLayer
+    , _moves :: MoveSeq
 }
+
+makeLenses 'Lib
 
 -- | Represents an empty database
 empty :: Lib
@@ -37,46 +43,47 @@ empty =
     Lib (Seq.replicate 225 HashMap.empty) MoveSeq.empty
 
 back :: Lib -> Lib
-back l = l { moves = MoveSeq.back <| moves l }
+back = over moves MoveSeq.back
 
 -- | add a position to the lib
 addPos :: MoveSeq -> Lib -> Lib
 addPos pos l
     | exists pos l = l
     | otherwise =
-        l { lib = lib l |> Seq.adjust (HashMap.insert pos defMoveInfo) (MoveSeq.moveCount pos) } -- seems like it's time to learn lens
+        l |> lib %~ Seq.adjust (HashMap.insert pos defMoveInfo) (MoveSeq.moveCount pos)
 
 -- | add a move to the lib
 addMove :: Move -> Lib -> Lib
 addMove move l =
-    addPos pos l { moves = pos }
+    addPos pos <| set moves pos l
     where
-        pos = MoveSeq.makeMove' move <| moves l
+        pos = MoveSeq.makeMove' move <| l^.moves
 
 -- | removes a position from the lib
 removePos :: MoveSeq -> Lib -> Lib
 removePos pos l
     | MoveSeq.isEmpty pos = l
-    | otherwise = l { lib = lib l |> Seq.adjust (HashMap.delete pos) (MoveSeq.moveCount pos) }
+    | otherwise = l |> lib %~ Seq.adjust (HashMap.delete pos) (MoveSeq.moveCount pos)
 
 -- | removes a position and all derivable positions from the lib
 removeR :: MoveSeq -> Lib -> Lib
-removeR pos l
-    | MoveSeq.isEmpty pos = l
-    | otherwise = 
-        l
-        |> removePos pos
-        |> applyAll (MoveSeq.mapNext (applyIf2 isOrphan removeR) pos)
+removeR pos =
+        removePos pos
+        .> applyAll (MoveSeq.mapNext (applyIf2 isOrphan removeR) pos)
         where
             isOrphan :: MoveSeq -> Lib -> Bool -- wip
-            isOrphan pos' l = exists pos' l
+            isOrphan pos' l' = exists pos' l'
 -- | removes current position from the lib
 remove :: Lib -> Lib
-remove l = l |> removePos (moves l) |> back
+remove l = l |> removePos (l^.moves) |> back
 
 -- | given a function that takes a MoveSeq and LibLayer, apply it to correct LibLayer of a Lib
 libLayerHelper :: (MoveSeq -> LibLayer -> a) -> MoveSeq -> Lib -> a
-libLayerHelper f pos l = lib l `Seq.index` MoveSeq.moveCount pos |> f pos
+libLayerHelper f pos l = (l^.lib) `Seq.index` MoveSeq.moveCount pos |> f pos
+
+-- | given a functions that changes a libLayer based on a MoveSeq, appyl it to correct LibLayer of a Lib
+updateLibLayer :: (MoveSeq -> LibLayer -> LibLayer) -> MoveSeq -> Lib -> Lib
+updateLibLayer f pos = lib %~ Seq.adjust (f pos) (MoveSeq.moveCount pos)
 
 exists :: MoveSeq -> Lib -> Bool -- not sure about the argument order, maybe Move and Pos should be the other way around
 exists = libLayerHelper HashMap.member
@@ -85,24 +92,24 @@ getPos :: MoveSeq -> Lib -> Maybe MoveInfo
 getPos = libLayerHelper HashMap.lookup
 
 printLib :: Lib -> IO ()
-printLib lib =
+printLib l =
     pos
     |> MoveSeq.toText char
     |> putText
     where
-        pos = moves lib
+        pos = l^.moves
 
-        char p None  = if exists (MoveSeq.makeMove' p pos) lib then " +" else " ."
+        char p None  = if exists (MoveSeq.makeMove' p pos) l then " +" else " ."
         char _ Black = " x"
         char _ White = " o"
 
 -- some UI-related functions
 
 transform :: (Move -> Move) -> Lib -> Lib
-transform f l = l { moves = MoveSeq.transform f <| moves l }
+transform f = moves %~ MoveSeq.transform f
 
 mirror :: Lib -> Lib
-mirror = transform (\ p -> Move.fromIntPartial (14 - Move.x p) (Move.y p))
+mirror = transform (\ p -> Move.fromIntPartial (14 - Move.getX p) (Move.getY p))
 
 rotate :: Lib -> Lib
-rotate = transform (\ p -> Move.fromIntPartial (Move.y p) (14-Move.x p))
+rotate = transform (\ p -> Move.fromIntPartial (Move.getY p) (14-Move.getX p))

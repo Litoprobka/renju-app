@@ -3,7 +3,6 @@ module CLI where
 import Universum
 import Flow
 
-import Move (Move)
 import Lib
 import qualified Move
 
@@ -21,7 +20,7 @@ repl l = do
         "quit" -> pure l
         "back" -> repl <| back l
         "remove" -> repl <| remove l
-        "removeR" -> repl <| removeR (moves l) l
+        "removeR" -> repl <| removeR (l^.moves) l
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
 

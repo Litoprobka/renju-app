@@ -3,7 +3,7 @@ version:             0.1.0.0
 #synopsis:
 #description:
 homepage:            https://github.com/githubuser/monomer-starter#readme
-license:             BSD3
+license:             BSD2
 author:              Litoprobka
 #maintainer:          example@example.com
 copyright:           2021 Litoprobka
@@ -35,5 +35,15 @@ executables:
     source-dirs:      src
     main:             Main.hs
     ghc-options:
-    - -fwarn-incomplete-patterns
+    - -Wall
     - -threaded
+
+library: # seems like I have to do this for hspec
+  source-dirs: src
+  ghc-options:
+    - -Wall
+
+tests:
+  spec:
+    defaults: hspec/hspec@master
+    dependencies: renju-app

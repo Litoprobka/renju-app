@@ -1,13 +1,12 @@
 module Debug where
 
-import Universum hiding ((<.))
+import Universum
 import Flow
 
 import qualified Pos
 import qualified Move
 import qualified Lib
 
-import Data.Text(pack)
 -- chances are there is a better way to make debug-only functions, but this works so far
 
 fromJust (Just x) = x
