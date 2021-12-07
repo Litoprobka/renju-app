@@ -22,7 +22,7 @@ import qualified Data.HashMap.Strict as HashMap
 newtype MoveInfo = MoveInfo {
     comment :: Text
     -- other stuff like board text, previous move (if needed)
-}
+} deriving (Show, Eq)
 
 -- instance Default MoveInfo where 
 defMoveInfo :: MoveInfo
@@ -33,7 +33,7 @@ type LibLayer = HashMap MoveSeq MoveInfo
 data Lib = Lib {
       _lib :: Seq LibLayer
     , _moves :: MoveSeq
-}
+} deriving (Show, Eq)
 
 makeLenses 'Lib
 
@@ -72,7 +72,7 @@ removeR pos =
         .> applyAll (MoveSeq.mapNext (applyIf2 isOrphan removeR) pos)
         where
             isOrphan :: MoveSeq -> Lib -> Bool -- wip
-            isOrphan pos' l' = exists pos' l'
+            isOrphan pos' l' = exists pos' l' && (all (not <. flip exists l') <| MoveSeq.allPrev pos')
 -- | removes current position from the lib
 remove :: Lib -> Lib
 remove l = l |> removePos (l^.moves) |> back

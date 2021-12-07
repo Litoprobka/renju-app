@@ -10,4 +10,4 @@ spec = do
     describe "fromInt" $ do
         prop "returns Nothing only for out-of-bounds coordinates" $
             \x y -> fromInt x y `shouldBe` if x `elem` [0..14] && y `elem` [0..14] then (Just (fromIntPartial x y) :: Maybe Move) else (Nothing :: Maybe Move)
-            
+    -- seems like nothing else can be properly tested without defining custom Arbitrary instances

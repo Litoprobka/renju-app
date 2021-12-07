@@ -9,6 +9,7 @@ import Pos(Stone(..), fromMoveList, toText)
 import Move(Move)
 import qualified Move
 import Data.List (elemIndex)
+import Data.List.Index (imap, ipartition, deleteAt)
 
 -- A different implementation of Pos. Preserves move order, so it can be used in Lib; should be faster to hash as well.
 newtype MoveSeq = MoveSeq { getMoves :: [Move] } deriving Show -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
@@ -96,6 +97,28 @@ mapEmpty f moves =
 -- | Apply a function to all positions that can be derived from the current one
 mapNext :: (MoveSeq -> a) -> MoveSeq -> [a]
 mapNext f moves = mapEmpty (f <. (`MoveSeq.makeMove'` moves)) moves
+
+-- | Returns all parent positions (current one minus one move)
+allPrev :: MoveSeq -> [MoveSeq]
+allPrev (MoveSeq []) = []
+allPrev moves =
+    getMoves moves
+    |> ipartition (\i _ -> even i) -- True for black moves, False for white moves
+    |> _1 %~ copies
+    |> _2 %~ copies
+    |> blackOrWhite %~ imap deleteAt -- I love lens
+    |> uncurry (zipWith toMoveSeq) -- figuring this out took quite a bit of time
+    where
+        copies = replicate <| (moveCount moves - 1) `div` 2 + 1 -- 4 -> 2, 5 -> 3, 17 -> 8...
+        blackOrWhite = if odd (moveCount moves) then _1 else _2 -- move count is odd => last move was black => try removing black moves
+        
+        toMoveSeq :: [Move] -> [Move] -> MoveSeq
+        toMoveSeq b w
+            | even <| moveCount moves = go b w |> MoveSeq -- move count is even => last move was white => previous to last move was black => start with black
+            | otherwise = go w b |> MoveSeq
+        go [x] [] = [x]
+        go [ ] _ = error "length mismatch"
+        go (x:xs) ys = x : go ys xs
 
 toText :: (Move -> Stone -> Text) -> MoveSeq -> Text
 toText f moves =

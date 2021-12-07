@@ -56,11 +56,11 @@ transformations = fromMaybe (error "impossible") <| nonEmpty [ -- dependent type
         id
         , invert x
         , invert y
-        , invert x .> invert y 
+        , invert x .> invert y
         , swapxy
-        , swapxy .> invert x 
-        , swapxy .> invert y  
-        , swapxy .> invert x .> invert y 
+        , swapxy .> invert x
+        , swapxy .> invert y
+        , swapxy .> invert x .> invert y
     ]
     where
         invert coord = over coord (14-)

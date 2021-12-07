@@ -20,7 +20,7 @@ repl l = do
         "quit" -> pure l
         "back" -> repl <| back l
         "remove" -> repl <| remove l
-        "removeR" -> repl <| removeR (l^.moves) l
+        "removeR" -> repl (removeR (l^.moves) l |> back)
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
 

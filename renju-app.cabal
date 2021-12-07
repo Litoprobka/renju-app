@@ -39,6 +39,7 @@ library
     , containers
     , data-default
     , flow
+    , ilist
     , lens
     , monomer
     , text
@@ -71,6 +72,7 @@ executable app
     , containers
     , data-default
     , flow
+    , ilist
     , lens
     , monomer
     , text
@@ -85,6 +87,8 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      LibSpec
+      MoveSeqSpec
       MoveSpec
       Paths_renju_app
   hs-source-dirs:
@@ -98,6 +102,7 @@ test-suite spec
     , data-default
     , flow
     , hspec ==2.*
+    , ilist
     , lens
     , monomer
     , renju-app

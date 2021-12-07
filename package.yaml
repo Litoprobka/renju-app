@@ -29,6 +29,7 @@ dependencies:
   - universum >= 1.7.2 && < 2
   - containers
   - unordered-containers
+  - ilist
 
 executables:
   app:
