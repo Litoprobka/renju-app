@@ -1,12 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
 
-module Move (Move, fromInt, fromIntPartial, fromText, fromBytePartial, hashPart, transformations, getX, getY) where
+module Move (Move, fromInt, fromIntPartial, fromText, Move.toText, fromBytePartial, hashPart, transformations, getX, getY) where
 
 import Universum hiding (over, view, (^.))
+import Data.Text (singleton) -- doesn't Universum re-export Text.singleton?
 import Control.Lens hiding ((.>), (<|), (|>))
 import Flow
 
-import Data.List (elemIndex)
+import Data.List (elemIndex, (!!))
 
 -- | Represents a coordinate point on a board
 data Move = Move 
@@ -29,15 +31,23 @@ fromInt x' y'
 fromIntPartial :: Int -> Int -> Move
 fromIntPartial x' y' = fromMaybe (error "invalid x or y") (fromInt x' y')
 
+charCoords :: String
+charCoords = "abcdefghijklmno"
+
 -- | Another way to create a Move
 fromText :: Text -> Maybe Move
 fromText t =
     case toList t of
         (xCoord:yCoord) -> do
-            x' <- xCoord `elemIndex` "abcdefghijklmno"
+            x' <- xCoord `elemIndex` charCoords
             y' <- readMaybe yCoord
             fromInt x' (y'-1)
         _ -> Nothing
+
+-- | Convert a move to getpos format, i.e. (9, 6) -> "i7"
+toText :: Move -> Text
+toText m =
+    singleton (charCoords !! view x m) <> show (m^.y + 1)
 
 fromBytePartial :: Int -> Move
 fromBytePartial i

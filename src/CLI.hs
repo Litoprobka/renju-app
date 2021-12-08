@@ -21,6 +21,13 @@ repl l = do
         "back" -> repl <| back l
         "remove" -> repl <| remove l
         "removeR" -> repl (removeR (l^.moves) l |> back)
+        "save" -> (Lib.toText l |> writeFile "lib") >> repl l -- name of the lib file is hardcoded for now
+        "load" -> do -- this is a bit messy
+                    l' <- readFile "lib"
+                    case Lib.fromText l' of
+                        Just newLib -> repl newLib
+                        Nothing -> putTextLn "invalid lib file" >> repl l 
+
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
 

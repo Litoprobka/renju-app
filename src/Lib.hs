@@ -17,6 +17,7 @@ import qualified MoveSeq
 
 import qualified Data.Sequence as Seq
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text as Text (concat)
 
 -- | Additional info for a position, such as comments
 newtype MoveInfo = MoveInfo {
@@ -113,3 +114,22 @@ mirror = transform (\ p -> Move.fromIntPartial (14 - Move.getX p) (Move.getY p))
 
 rotate :: Lib -> Lib
 rotate = transform (\ p -> Move.fromIntPartial (Move.getY p) (14-Move.getX p))
+
+-- storing Lib as readable text
+-- does not print MoveInfo yet
+toText :: Lib -> Text
+toText =
+    view lib
+    .> Seq.filter (not <. null)
+    <.>> (
+        keys
+        <.>> MoveSeq.toGetpos
+        .> unlines
+        )
+    .> toList
+    .> Text.concat
+
+fromText :: Text -> Maybe Lib
+fromText t = do
+    positions <- mapM MoveSeq.fromGetpos (lines t)
+    pure <| foldr' Lib.addPos Lib.empty positions

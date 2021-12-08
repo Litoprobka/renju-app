@@ -10,6 +10,7 @@ import Move(Move)
 import qualified Move
 import Data.List (elemIndex)
 import Data.List.Index (imap, ipartition, deleteAt)
+import qualified Data.Text as Text (concat)
 
 -- A different implementation of Pos. Preserves move order, so it can be used in Lib; should be faster to hash as well.
 newtype MoveSeq = MoveSeq { getMoves :: [Move] } deriving Show -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
@@ -86,6 +87,13 @@ makeMove' move =
 fromGetpos :: Text -> Maybe MoveSeq
 fromGetpos = fromGetpos' <.>> MoveSeq
 
+toGetpos :: MoveSeq -> Text
+toGetpos =
+    getMoves
+    <.>> Move.toText
+    .> reverse
+    .> Text.concat
+
 -- | Apply a function to each Move that is not present in a given position
 mapEmpty :: (Move -> a) -> MoveSeq -> [a]
 mapEmpty f moves =
@@ -122,4 +130,4 @@ allPrev moves =
 
 toText :: (Move -> Stone -> Text) -> MoveSeq -> Text
 toText f moves =
-    Pos.toText f <| fromMoveList <| getMoves <| moves
+    Pos.toText f <| fromMoveList <| getMoves <| moves   
