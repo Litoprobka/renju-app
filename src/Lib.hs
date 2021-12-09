@@ -2,7 +2,7 @@
 
 module Lib where
 
-import Universum hiding (over, view, (^.), (%~), set) -- Universum re-exports microlens (but not microlens-th), while Monomer depends on lens. Ewww...
+import Universum hiding (over, view, (^.), (%~), set, (.~)) -- Universum re-exports microlens (but not microlens-th), while Monomer depends on lens. Ewww...
 import Control.Lens hiding ((.>), (<.), (<|), (|>), transform)
 import Flow
 
@@ -60,23 +60,30 @@ addMove move l =
     where
         pos = MoveSeq.makeMove' move <| l^.moves
 
+-- | checks if a given position exists in the Lib. If it does, switch to it
+nextMove :: Move -> Lib -> Lib
+nextMove move l =
+    l |> applyIf (exists newPos) (moves .~ newPos)
+    where
+        newPos = l^.moves |> MoveSeq.makeMove' move
+
 -- | removes a position from the lib
 removePos :: MoveSeq -> Lib -> Lib
 removePos pos l
     | MoveSeq.isEmpty pos = l
     | otherwise = l |> lib %~ Seq.adjust (HashMap.delete pos) (MoveSeq.moveCount pos)
 
--- | removes a position and all derivable positions from the lib
+-- | removes a given position and all derivable positions from the lib
 removeR :: MoveSeq -> Lib -> Lib
 removeR pos =
         removePos pos
         .> applyAll (MoveSeq.mapNext (applyIf2 isOrphan removeR) pos)
         where
-            isOrphan :: MoveSeq -> Lib -> Bool -- wip
+            isOrphan :: MoveSeq -> Lib -> Bool
             isOrphan pos' l' = exists pos' l' && (all (not <. flip exists l') <| MoveSeq.allPrev pos')
 -- | removes current position from the lib
 remove :: Lib -> Lib
-remove l = l |> removePos (l^.moves) |> back
+remove l = l |> removeR (l^.moves) |> back
 
 -- | given a function that takes a MoveSeq and LibLayer, apply it to correct LibLayer of a Lib
 libLayerHelper :: (MoveSeq -> LibLayer -> a) -> MoveSeq -> Lib -> a
@@ -132,4 +139,5 @@ toText =
 fromText :: Text -> Maybe Lib
 fromText t = do
     positions <- mapM MoveSeq.fromGetpos (lines t)
+    
     pure <| foldr' Lib.addPos Lib.empty positions

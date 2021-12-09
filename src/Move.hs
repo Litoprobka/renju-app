@@ -52,8 +52,7 @@ toText m =
 fromBytePartial :: Int -> Move
 fromBytePartial i
     | i > 224 = error "invalid x or y"
-    | otherwise = Move x' y' where
-        (x', y') = i `divMod` 15
+    | otherwise = i `divMod` 15 |> uncurry Move
         
 
 -- | Used to hash MoveSeq

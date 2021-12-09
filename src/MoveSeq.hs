@@ -99,7 +99,7 @@ mapEmpty :: (Move -> a) -> MoveSeq -> [a]
 mapEmpty f moves =
     [0..224]
     <&> Move.fromBytePartial
-     &  filter (not . (`elem` getMoves moves))
+     &  filter (`notElem` getMoves moves)
     <&> f
 
 -- | Apply a function to all positions that can be derived from the current one
@@ -116,7 +116,7 @@ allPrev moves =
     |> _2 %~ copies
     |> blackOrWhite %~ imap deleteAt -- I love lens
     |> uncurry (zipWith toMoveSeq) -- figuring this out took quite a bit of time
-    where
+    where 
         copies = replicate <| (moveCount moves - 1) `div` 2 + 1 -- 4 -> 2, 5 -> 3, 17 -> 8...
         blackOrWhite = if odd (moveCount moves) then _1 else _2 -- move count is odd => last move was black => try removing black moves
         

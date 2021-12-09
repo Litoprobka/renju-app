@@ -1,39 +1,62 @@
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE LambdaCase #-}
+
 module CLI where
 
 import Universum
 import Flow
 
 import Lib
+import System.Directory
+import Move (Move)
 import qualified Move
 
 -- very simple console-based UI that works with a single Lib
 -- I'm writing this to figure out what the GUI would need
 
+pattern WithArg :: Text -> Text -> Text
+pattern WithArg command arg <- (withArg -> Just (command, arg))
+
+pattern Move :: Move -> Text
+pattern Move move <- (Move.fromText -> Just move)
+
+withArg :: Text -> Maybe (Text, Text)
+withArg =
+    words .> \case
+    [command, arg] -> Just (command, arg)
+    _ -> Nothing
+
 printLib' :: Lib -> IO Lib
 printLib' l = printLib l >> pure l
 
-repl :: Lib -> IO Lib
+repl :: Lib -> IO ()
 repl l = do
     printLib l
     text <- getLine
     case text of
-        "quit" -> pure l
+        "quit" -> pass
         "back" -> repl <| back l
-        "remove" -> repl <| remove l
-        "removeR" -> repl (removeR (l^.moves) l |> back)
-        "save" -> (Lib.toText l |> writeFile "lib") >> repl l -- name of the lib file is hardcoded for now
-        "load" -> do -- this is a bit messy
+        "remove" -> repl (removeR (l^.moves) l |> back)
+
+        "save" `WithArg` filePath -> (Lib.toText l |> writeFile (toString filePath)) >> repl l
+        "load" `WithArg` filePath -> do
+            fileExists <- doesFileExist <| toString filePath
+            if fileExists -- there should be a better way to write this code block
+                then do
                     l' <- readFile "lib"
                     case Lib.fromText l' of
                         Just newLib -> repl newLib
-                        Nothing -> putTextLn "invalid lib file" >> repl l 
+                        Nothing -> putTextLn "invalid lib file" >> repl l
+                else putTextLn "file not found" >> repl l 
 
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
 
-        _ -> case Move.fromText text of
-          Nothing -> putTextLn "unknown command" >> repl l
-          Just p  -> repl <| addMove p l
+        Move move -> repl <| nextMove move l
+        "add" `WithArg` (Move move) -> repl <| addMove move l -- nesting custom patterns like this is super neat
+        _ -> putTextLn "invalid command" >> repl l
 
-startRepl :: IO Lib
+
+startRepl :: IO ()
 startRepl = repl Lib.empty    

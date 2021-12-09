@@ -30,6 +30,7 @@ dependencies:
   - containers
   - unordered-containers
   - ilist
+  - directory
 
 executables:
   app:

@@ -38,6 +38,7 @@ library
       base >=4.8 && <5
     , containers
     , data-default
+    , directory
     , flow
     , ilist
     , lens
@@ -71,6 +72,7 @@ executable app
       base >=4.8 && <5
     , containers
     , data-default
+    , directory
     , flow
     , ilist
     , lens
@@ -100,6 +102,7 @@ test-suite spec
       base >=4.8 && <5
     , containers
     , data-default
+    , directory
     , flow
     , hspec ==2.*
     , ilist
