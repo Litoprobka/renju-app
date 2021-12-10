@@ -59,4 +59,4 @@ repl l = do
 
 
 startRepl :: IO ()
-startRepl = repl Lib.empty    
+startRepl = repl Lib.empty

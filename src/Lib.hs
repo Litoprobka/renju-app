@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Lib where
 
@@ -18,16 +19,16 @@ import qualified MoveSeq
 import qualified Data.Sequence as Seq
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text (concat)
+import Data.Default ( Default(..) )
 
--- | Additional info for a position, such as comments
-newtype MoveInfo = MoveInfo {
-    comment :: Text
-    -- other stuff like board text, previous move (if needed)
-} deriving (Show, Eq)
+-- | Additional info for a position, such as board text and comments
+data MoveInfo = MoveInfo 
+    { _comment :: Text
+    , _boardText :: HashMap Move Text }
+    deriving (Show, Eq)
 
--- instance Default MoveInfo where 
-defMoveInfo :: MoveInfo
-defMoveInfo = MoveInfo ""
+instance Default MoveInfo where 
+    def = MoveInfo "" HashMap.empty
 
 type LibLayer = HashMap MoveSeq MoveInfo
 -- | Represents a database file
@@ -37,26 +38,31 @@ data Lib = Lib {
 } deriving (Show, Eq)
 
 makeLenses 'Lib
+makeLenses 'MoveInfo
 
 -- | Represents an empty database
 empty :: Lib
 empty =
-    Lib (Seq.replicate 225 HashMap.empty) MoveSeq.empty
+    Lib (one (MoveSeq.empty, def) Seq.<| Seq.replicate 225 HashMap.empty) MoveSeq.empty
 
 back :: Lib -> Lib
 back = over moves MoveSeq.back
 
--- | add a position to the lib
-addPos :: MoveSeq -> Lib -> Lib
-addPos pos l
+-- | add a position with default (blank) MoveInfo to the lib
+addPosDef :: MoveSeq -> Lib -> Lib
+addPosDef = addPos def
+    
+-- | add a position with given MoveInfo to the lib. Used when loading a lib from a text file.
+addPos :: MoveInfo -> MoveSeq -> Lib -> Lib
+addPos mi pos l
     | exists pos l = l
     | otherwise =
-        l |> lib %~ Seq.adjust (HashMap.insert pos defMoveInfo) (MoveSeq.moveCount pos)
+        l |> lib %~ Seq.adjust (HashMap.insert pos mi) (MoveSeq.moveCount pos)
 
 -- | add a move to the lib
 addMove :: Move -> Lib -> Lib
 addMove move l =
-    addPos pos <| set moves pos l
+    addPosDef pos <| set moves pos l
     where
         pos = MoveSeq.makeMove' move <| l^.moves
 
@@ -69,13 +75,14 @@ nextMove move l =
 
 -- | removes a position from the lib
 removePos :: MoveSeq -> Lib -> Lib
-removePos pos l
-    | MoveSeq.isEmpty pos = l
-    | otherwise = l |> lib %~ Seq.adjust (HashMap.delete pos) (MoveSeq.moveCount pos)
+removePos pos =
+    lib %~ Seq.adjust (HashMap.delete pos) (MoveSeq.moveCount pos)
 
 -- | removes a given position and all derivable positions from the lib
 removeR :: MoveSeq -> Lib -> Lib
-removeR pos =
+removeR pos
+    | MoveSeq.isEmpty pos = const Lib.empty -- MoveSeq.allPrev does not work properly for positions with one move
+    | otherwise =
         removePos pos
         .> applyAll (MoveSeq.mapNext (applyIf2 isOrphan removeR) pos)
         where
@@ -99,6 +106,10 @@ exists = libLayerHelper HashMap.member
 getPos :: MoveSeq -> Lib -> Maybe MoveInfo
 getPos = libLayerHelper HashMap.lookup
 
+currentPos :: Lib -> MoveInfo
+currentPos (\l -> getPos (l^.moves) l -> Just mi) = mi
+currentPos _ = error "current pos does not exist in the lib (impossible)"
+
 printLib :: Lib -> IO ()
 printLib l =
     pos
@@ -107,7 +118,8 @@ printLib l =
     where
         pos = l^.moves
 
-        char p None  = if exists (MoveSeq.makeMove' p pos) l then " +" else " ."
+        char (currentPos l |> view boardText |> (HashMap.!?) -> Just bt) None = bt
+        char move None = if exists (MoveSeq.makeMove' move pos) l then " +" else " ."
         char _ Black = " x"
         char _ White = " o"
 
@@ -123,7 +135,7 @@ rotate :: Lib -> Lib
 rotate = transform (\ p -> Move.fromIntPartial (Move.getY p) (14-Move.getX p))
 
 -- storing Lib as readable text
--- does not print MoveInfo yet
+-- does not store MoveInfo yet
 toText :: Lib -> Text
 toText =
     view lib
@@ -137,7 +149,7 @@ toText =
     .> Text.concat
 
 fromText :: Text -> Maybe Lib
-fromText t = do
-    positions <- mapM MoveSeq.fromGetpos (lines t)
-    
-    pure <| foldr' Lib.addPos Lib.empty positions
+fromText =
+    lines
+    .> mapM MoveSeq.fromGetpos
+    <.>> foldr' Lib.addPosDef Lib.empty

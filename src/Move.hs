@@ -4,7 +4,6 @@
 module Move (Move, fromInt, fromIntPartial, fromText, Move.toText, fromBytePartial, hashPart, transformations, getX, getY) where
 
 import Universum hiding (over, view, (^.))
-import Data.Text (singleton) -- doesn't Universum re-export Text.singleton?
 import Control.Lens hiding ((.>), (<|), (|>))
 import Flow
 
@@ -17,6 +16,9 @@ data Move = Move
     deriving (Show, Eq, Ord)
 
 makeLenses 'Move
+
+instance Hashable Move where
+    hashWithSalt salt = toByte .> (+salt)
 
 -- | Create a Move, checking that x and y are in [0..14]
 fromInt :: Int -> Int -> Maybe Move
@@ -47,18 +49,21 @@ fromText t =
 -- | Convert a move to getpos format, i.e. (9, 6) -> "i7"
 toText :: Move -> Text
 toText m =
-    singleton (charCoords !! view x m) <> show (m^.y + 1)
+    one (charCoords !! view x m) <> show (m^.y + 1)
 
 fromBytePartial :: Int -> Move
 fromBytePartial i
     | i > 224 = error "invalid x or y"
-    | otherwise = i `divMod` 15 |> uncurry Move
+    | otherwise = i `divMod` 15 |> swap |> uncurry Move
+
+toByte :: Move -> Int
+toByte m = m^.x + m^.y * 15
         
 
 -- | Used to hash MoveSeq
 hashPart :: Move -> Integer
 hashPart m =
-    3^(m^.x + m^.y * 15)
+    3^toByte m
 
 transformations :: NonEmpty (Move -> Move)
 transformations = fromMaybe (error "impossible") <| nonEmpty [ -- dependent types...
