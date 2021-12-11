@@ -22,12 +22,12 @@ import qualified Data.Text as Text (concat)
 import Data.Default ( Default(..) )
 
 -- | Additional info for a position, such as board text and comments
-data MoveInfo = MoveInfo 
+data MoveInfo = MoveInfo
     { _comment :: Text
     , _boardText :: HashMap Move Text }
     deriving (Show, Eq)
 
-instance Default MoveInfo where 
+instance Default MoveInfo where
     def = MoveInfo "" HashMap.empty
 
 type LibLayer = HashMap MoveSeq MoveInfo
@@ -48,16 +48,17 @@ empty =
 back :: Lib -> Lib
 back = over moves MoveSeq.back
 
--- | add a position with default (blank) MoveInfo to the lib
+-- | add a position with default (blank) MoveInfo to the lib.
+-- Does not overwrite the position if it already exists.
 addPosDef :: MoveSeq -> Lib -> Lib
-addPosDef = addPos def
-    
--- | add a position with given MoveInfo to the lib. Used when loading a lib from a text file.
+addPosDef m = applyIf (not <. exists m) (addPos def m)
+
+-- | | add a position with given MoveInfo to the lib. 
+-- Intended for loading a lib from a text file.
+-- Overwrites MoveInfo if the position already exists
 addPos :: MoveInfo -> MoveSeq -> Lib -> Lib
-addPos mi pos l
-    | exists pos l = l
-    | otherwise =
-        l |> lib %~ Seq.adjust (HashMap.insert pos mi) (MoveSeq.moveCount pos)
+addPos mi pos =
+        lib %~ Seq.adjust (HashMap.insert pos mi) (MoveSeq.moveCount pos)
 
 -- | add a move to the lib
 addMove :: Move -> Lib -> Lib
@@ -96,9 +97,13 @@ remove l = l |> removeR (l^.moves) |> back
 libLayerHelper :: (MoveSeq -> LibLayer -> a) -> MoveSeq -> Lib -> a
 libLayerHelper f pos l = (l^.lib) `Seq.index` MoveSeq.moveCount pos |> f pos
 
--- | given a functions that changes a libLayer based on a MoveSeq, appyl it to correct LibLayer of a Lib
+-- | given a functions that changes a libLayer based on a MoveSeq, apply it to correct LibLayer of a Lib
 updateLibLayer :: (MoveSeq -> LibLayer -> LibLayer) -> MoveSeq -> Lib -> Lib
 updateLibLayer f pos = lib %~ Seq.adjust (f pos) (MoveSeq.moveCount pos)
+
+-- | apply a (MoveInfo -> MoveInfo) function to a given move in a lib
+updatePos :: (MoveInfo -> MoveInfo) -> MoveSeq -> Lib -> Lib
+updatePos f = updateLibLayer (HashMap.adjust f)
 
 exists :: MoveSeq -> Lib -> Bool -- not sure about the argument order, maybe Move and Pos should be the other way around
 exists = libLayerHelper HashMap.member
@@ -110,10 +115,27 @@ currentPos :: Lib -> MoveInfo
 currentPos (\l -> getPos (l^.moves) l -> Just mi) = mi
 currentPos _ = error "current pos does not exist in the lib (impossible)"
 
+-- manipulating comments and board text
+
+-- | replace the comment for the current position
+addComment :: Text -> Lib -> Lib
+addComment t l = updatePos (set comment t) (l^.moves) l
+
+-- | returns the comment of the current position
+getComment :: Lib -> Text
+getComment = currentPos .> view comment
+
+-- | replcae board text of a given move for the current position
+addBoardText :: Move -> Text -> Lib -> Lib
+addBoardText m t l = updatePos (over boardText upd) pos l where
+    upd = if m `MoveSeq.notIn` pos then HashMap.insert m (" " <> t) else id
+    pos = l^.moves
+
 printLib :: Lib -> IO ()
 printLib l =
     pos
     |> MoveSeq.toText char
+    |> (<> ("Comment: " <> getComment l <> "\n"))
     |> putText
     where
         pos = l^.moves

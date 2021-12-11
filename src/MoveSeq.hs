@@ -73,10 +73,13 @@ stoneAt move =
         Just i | odd i -> Black
                | otherwise -> White
 
+notIn :: Move -> MoveSeq -> Bool
+notIn move = stoneAt move .> (==None)
+
 -- | Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
 makeMove :: Move -> MoveSeq -> Maybe MoveSeq
-makeMove move (MoveSeq moves)
-    | move `notElem` moves = Just <| MoveSeq <| move : moves
+makeMove move pos@(MoveSeq moves)
+    | move `notIn` pos = Just <| MoveSeq <| move : moves
     | otherwise = Nothing
 
 -- | Like 'makeMove', but returns the same position if the coordinates are taken
@@ -99,7 +102,7 @@ mapEmpty :: (Move -> a) -> MoveSeq -> [a]
 mapEmpty f moves =
     [0..224]
     <&> Move.fromBytePartial
-     &  filter (`notElem` getMoves moves)
+     &  filter (`notIn` moves)
     <&> f
 
 -- | Apply a function to all positions that can be derived from the current one

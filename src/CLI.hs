@@ -24,7 +24,7 @@ pattern Move move <- (Move.fromText -> Just move)
 withArg :: Text -> Maybe (Text, Text)
 withArg =
     words .> \case
-    [command, arg] -> Just (command, arg)
+    command : rest -> Just (command, unwords rest)
     _ -> Nothing
 
 printLib' :: Lib -> IO Lib
@@ -52,6 +52,9 @@ repl l = do
 
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
+
+        "comment" `WithArg` t -> addComment t l |> repl
+        (Move move) `WithArg` t -> addBoardText move t l |> repl
 
         Move move -> repl <| nextMove move l
         "add" `WithArg` (Move move) -> repl <| addMove move l -- nesting custom patterns like this is super neat
