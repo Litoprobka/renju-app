@@ -24,7 +24,7 @@ import Data.Default ( Default(..) )
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
     { _comment :: Text
-    , _boardText :: HashMap Move Text }
+    , _boardText :: HashMap MoveSeq Text }
     deriving (Show, Eq)
 
 instance Default MoveInfo where
@@ -125,10 +125,21 @@ addComment t l = updatePos (set comment t) (l^.moves) l
 getComment :: Lib -> Text
 getComment = currentPos .> view comment
 
+getBoardText :: Move -> Lib -> Maybe Text
+getBoardText move l = l
+    |> currentPos
+    |> view boardText
+    |> HashMap.lookup newpos
+    where
+        newpos = l
+            |> view moves
+            |> MoveSeq.makeMove' move
+
 -- | replcae board text of a given move for the current position
 addBoardText :: Move -> Text -> Lib -> Lib
 addBoardText m t l = updatePos (over boardText upd) pos l where
-    upd = if m `MoveSeq.notIn` pos then HashMap.insert m (" " <> t) else id
+    btpos = MoveSeq.makeMove' m pos
+    upd = if btpos /= pos then HashMap.insert btpos (" " <> t) else id
     pos = l^.moves
 
 printLib :: Lib -> IO ()
@@ -140,7 +151,8 @@ printLib l =
     where
         pos = l^.moves
 
-        char (currentPos l |> view boardText |> (HashMap.!?) -> Just bt) None = bt
+        --char move None = case MoveSeq.makeMove' move pos of
+        char ((`getBoardText` l) -> Just bt) None = bt
         char move None = if exists (MoveSeq.makeMove' move pos) l then " +" else " ."
         char _ Black = " x"
         char _ White = " o"

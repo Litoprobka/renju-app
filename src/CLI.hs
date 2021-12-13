@@ -24,6 +24,7 @@ pattern Move move <- (Move.fromText -> Just move)
 withArg :: Text -> Maybe (Text, Text)
 withArg =
     words .> \case
+    [_] -> Nothing
     command : rest -> Just (command, unwords rest)
     _ -> Nothing
 
@@ -48,7 +49,7 @@ repl l = do
                     case Lib.fromText l' of
                         Just newLib -> repl newLib
                         Nothing -> putTextLn "invalid lib file" >> repl l
-                else putTextLn "file not found" >> repl l 
+                else putTextLn "file not found" >> repl l
 
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
