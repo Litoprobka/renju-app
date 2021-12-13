@@ -139,7 +139,7 @@ getBoardText move l = l
 addBoardText :: Move -> Text -> Lib -> Lib
 addBoardText m t l = updatePos (over boardText upd) pos l where
     btpos = MoveSeq.makeMove' m pos
-    upd = if btpos /= pos then HashMap.insert btpos (" " <> t) else id
+    upd = if btpos /= pos then HashMap.insert btpos t else id
     pos = l^.moves
 
 printLib :: Lib -> IO ()
@@ -152,7 +152,11 @@ printLib l =
         pos = l^.moves
 
         --char move None = case MoveSeq.makeMove' move pos of
-        char ((`getBoardText` l) -> Just bt) None = bt
+        char ((`getBoardText` l) -> Just bt) None = 
+            safeHead bt
+            |> fromMaybe ' '
+            |> (one :: Char -> Text)
+            |> (" " <>)
         char move None = if exists (MoveSeq.makeMove' move pos) l then " +" else " ."
         char _ Black = " x"
         char _ White = " o"
