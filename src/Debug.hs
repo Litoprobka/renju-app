@@ -1,9 +1,8 @@
 module Debug where
 
-import Universum
-import Flow
+import DefaultImports
 
-import qualified Pos
+import qualified MoveSeq
 import qualified Move
 import qualified Lib
 
@@ -16,18 +15,16 @@ pp x y = fromJust <| Move.fromInt x y
 
 pt = fromJust <. Move.fromText
 
-gg = fromJust <. Pos.fromGetpos
+gg = fromJust <. MoveSeq.fromGetpos
 
-mm = Pos.makeMove'
+mm = MoveSeq.makeMove'
 
 mmp x y = mm <| pp x y
 
 mmt = mm <. pt
 
-tt :: [Text] -> Pos.Pos
-tt = foldl' (flip mmt) Pos.empty 
-
-printp = Pos.printPos
+tt :: [Text] -> MoveSeq.MoveSeq
+tt = foldl' (flip mmt) MoveSeq.empty 
 
 printl = Lib.printLib
 

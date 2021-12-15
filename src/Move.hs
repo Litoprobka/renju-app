@@ -3,9 +3,7 @@
 
 module Move (Move, fromInt, fromIntPartial, fromText, Move.toText, fromBytePartial, hashPart, transformations, getX, getY) where
 
-import Universum hiding (over, view, (^.))
-import Control.Lens hiding ((.>), (<|), (|>))
-import Flow
+import DefaultImports
 
 import Data.List (elemIndex, (!!))
 

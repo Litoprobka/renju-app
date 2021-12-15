@@ -1,8 +1,6 @@
 module Pos (Stone(..), Pos, Pos.empty, transform, longHash, longHashM, unwrap, update, stoneAt, moveCount, makeMove, makeMove', fromMoveList, fromStoneList, fromGetpos, Pos.toText, printPos) where
 
-import Universum
--- import Universum.Container
-import Flow
+import DefaultImports
 import LitoUtils
 
 import Move (Move)

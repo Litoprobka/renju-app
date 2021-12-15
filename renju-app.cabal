@@ -20,6 +20,7 @@ library
   exposed-modules:
       CLI
       Debug
+      DefaultImports
       Lib
       LitoUtils
       Main
@@ -41,10 +42,9 @@ library
     , directory
     , flow
     , ilist
-    , lens
+    , microlens-th
     , monomer
     , text
-    , text-show
     , universum >=1.7.2 && <2
     , unordered-containers
   mixins:
@@ -56,6 +56,7 @@ executable app
   other-modules:
       CLI
       Debug
+      DefaultImports
       Lib
       LitoUtils
       Move
@@ -75,10 +76,9 @@ executable app
     , directory
     , flow
     , ilist
-    , lens
+    , microlens-th
     , monomer
     , text
-    , text-show
     , universum >=1.7.2 && <2
     , unordered-containers
   mixins:
@@ -106,11 +106,10 @@ test-suite spec
     , flow
     , hspec ==2.*
     , ilist
-    , lens
+    , microlens-th
     , monomer
     , renju-app
     , text
-    , text-show
     , universum >=1.7.2 && <2
     , unordered-containers
   mixins:

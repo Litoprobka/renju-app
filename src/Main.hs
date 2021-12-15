@@ -2,29 +2,27 @@
 
 module Main where
 
-import Universum
-import Flow
-
-import LitoUtils
-import qualified Pos
+import DefaultImports
 import qualified Lib
+import Lib (Lib)
+import qualified MoveSeq
+import qualified Move
+import Move (Move)
+import Pos (Stone(..))
 import Debug
 import CLI
 
-import Control.Lens hiding ((^.), (|>), (<|))
-import Data.Text (Text)
 import Monomer
-import TextShow
-
-import qualified Monomer.Lens as L
 
 newtype AppModel = AppModel {
-  _clickCount :: Int
+  _lib :: Lib.Lib
 } deriving (Eq, Show)
 
 data AppEvent
   = AppInit
-  | AppIncrease
+  | BoardClick Move
+  | MoveBack
+  | RemovePos
   deriving (Eq, Show)
 
 makeLenses 'AppModel
@@ -37,6 +35,34 @@ menuBarStyle = map (`styleBasic` [
   -- sndColor lightGray
   ])
 
+-- a placeholder button
+phButton :: Text -> WidgetNode s AppEvent
+phButton name = button name AppInit
+
+boardButton :: Lib -> Move -> WidgetNode s AppEvent
+boardButton l m = boardButtonStyle (l ^. Lib.moves |> MoveSeq.stoneAt m) <| button (Move.toText m) <| BoardClick m
+
+boardButtonStyle :: CmbStyleBasic t => Stone -> t -> t
+boardButtonStyle stone = flip styleBasic [
+  radius 0,
+  case stone of
+    None  -> bgColor gray
+    Black -> bgColor darkGray
+    White -> bgColor lightGray
+  ] 
+
+buttonGrid :: Lib -> WidgetNode s AppEvent
+buttonGrid l =
+  [0..14]
+  <&> (\y ->
+    [0..14]
+    <&> (`Move.fromIntPartial` y)
+    <&> boardButton l
+  )
+  |> reverse
+  |> map hgrid
+  |> vgrid
+
 buildUI
   :: WidgetEnv AppModel AppEvent
   -> AppModel
@@ -44,18 +70,15 @@ buildUI
 buildUI wenv model = widgetTree where
   widgetTree = vstack [
       hstack <| menuBarStyle [
-        button "File" AppInit,
-        button "Edit" AppInit,
-        button "View" AppInit,
-        button "Move" AppInit
+        phButton "File",
+        phButton "Edit",
+        phButton "View",
+        phButton "Move",
+        button "Back" MoveBack
       ],
       separatorLine,
       spacer,
-      hstack [
-        label $ "Click count: " <> showt (model ^. clickCount),
-        spacer,
-        button "Increase count" AppIncrease
-      ]
+      buttonGrid (model ^. lib)
     ]
 
 handleEvent
@@ -66,12 +89,16 @@ handleEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent wenv node model evt = case evt of
   AppInit -> []
-  AppIncrease -> [Model (model & clickCount +~ 1)]
+  BoardClick m -> updateLibWith <| Lib.addMove m
+  MoveBack -> updateLibWith Lib.back
+  RemovePos -> updateLibWith Lib.remove
+  where
+    updateLibWith f = [ Model (model |> lib %~ f) ]
 
-main = startRepl
+-- main = startRepl
 
-mainM :: IO ()
-mainM = do
+main :: IO ()
+main = do
   startApp model handleEvent buildUI config
   where
     config = [
@@ -80,4 +107,4 @@ mainM = do
       appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf",
       appInitEvent AppInit
       ]
-    model = AppModel 0
+    model = AppModel Lib.empty

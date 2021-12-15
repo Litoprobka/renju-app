@@ -20,30 +20,29 @@ dependencies:
     mixin: 
     - hiding (System.IO.Unsafe)
     version: ">= 4.8 && < 5"
+  - containers
   - data-default
+  - directory
   - flow
-  - lens
+  - ilist
+  - microlens-th
   - monomer
   - text
-  - text-show
   - universum >= 1.7.2 && < 2
-  - containers
   - unordered-containers
-  - ilist
-  - directory
 
 executables:
   app:
     source-dirs:      src
     main:             Main.hs
     ghc-options:
-    - -Wall
+    - -W
     - -threaded
 
 library: # seems like I have to do this for hspec
   source-dirs: src
   ghc-options:
-    - -Wall
+    - -W
 
 tests:
   spec:

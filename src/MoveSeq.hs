@@ -1,8 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module MoveSeq where
 
-import Universum
-import Flow
+import DefaultImports
 import LitoUtils
 
 import Pos(Stone(..), fromMoveList, toText)
@@ -67,10 +66,11 @@ moveCount =
 stoneAt :: Move -> MoveSeq -> Stone
 stoneAt move =
     getMoves
+    .> reverse
     .> elemIndex move
     .> \case
         Nothing -> None
-        Just i | odd i -> Black
+        Just i | even i -> Black -- indices start from zero, so black moves are even
                | otherwise -> White
 
 notIn :: Move -> MoveSeq -> Bool

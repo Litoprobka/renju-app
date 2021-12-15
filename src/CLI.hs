@@ -4,9 +4,7 @@
 
 module CLI where
 
-import Universum
-import Flow
-
+import DefaultImports
 import Lib
 import System.Directory
 import Move (Move)

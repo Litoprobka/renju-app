@@ -3,15 +3,13 @@
 
 module Lib where
 
-import Universum hiding (over, view, (^.), (%~), set, (.~)) -- Universum re-exports microlens (but not microlens-th), while Monomer depends on lens. Ewww...
-import Control.Lens hiding ((.>), (<.), (<|), (|>), transform)
-import Flow
+import DefaultImports
+import LitoUtils
 
 import Move (Move)
 import qualified Move
 
 import Pos (Stone(..))
-import LitoUtils
 
 import MoveSeq (MoveSeq)
 import qualified MoveSeq
