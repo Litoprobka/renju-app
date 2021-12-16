@@ -9,6 +9,9 @@ import Lib
 import System.Directory
 import Move (Move)
 import qualified Move
+import Data.Aeson
+import Data.Aeson.Encode.Pretty
+import qualified Data.ByteString.Lazy as BS (readFile, writeFile)
 
 -- very simple console-based UI that works with a single Lib
 -- I'm writing this to figure out what the GUI would need
@@ -38,13 +41,13 @@ repl l = do
         "back" -> repl <| back l
         "remove" -> repl (removeR (l^.moves) l |> back)
 
-        "save" `WithArg` filePath -> (Lib.toText l |> writeFile (toString filePath)) >> repl l
+        "save" `WithArg` filePath -> (encodePretty l |> BS.writeFile (toString filePath)) >> repl l
         "load" `WithArg` filePath -> do
             fileExists <- doesFileExist <| toString filePath
             if fileExists -- there should be a better way to write this code block
                 then do
-                    l' <- readFile "lib"
-                    case Lib.fromText l' of
+                    l' <- BS.readFile <| toString filePath
+                    case decode l' of
                         Just newLib -> repl newLib
                         Nothing -> putTextLn "invalid lib file" >> repl l
                 else putTextLn "file not found" >> repl l

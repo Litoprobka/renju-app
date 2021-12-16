@@ -20,6 +20,9 @@ dependencies:
     mixin: 
     - hiding (System.IO.Unsafe)
     version: ">= 4.8 && < 5"
+  - aeson
+  - aeson-pretty
+  - bytestring
   - containers
   - data-default
   - directory

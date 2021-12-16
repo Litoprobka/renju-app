@@ -18,6 +18,8 @@ import qualified Data.Sequence as Seq
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text (concat)
 import Data.Default ( Default(..) )
+import Data.Aeson
+import Data.Aeson.Types (Parser)
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -28,12 +30,28 @@ data MoveInfo = MoveInfo
 instance Default MoveInfo where
     def = MoveInfo "" HashMap.empty
 
+instance ToJSON MoveInfo where
+    toJSON (MoveInfo c bt) = object ["comment" .= c, "board-text" .= bt]
+
+instance FromJSON MoveInfo where
+    parseJSON = withObject "MoveInfo" <| \obj -> MoveInfo 
+            <$> obj .: "comment"
+            <*> obj .: "board-text"
+
 type LibLayer = HashMap MoveSeq MoveInfo
 -- | Represents a database file
 data Lib = Lib {
       _lib :: Seq LibLayer
     , _moves :: MoveSeq
 } deriving (Show, Eq)
+
+instance ToJSON Lib where
+    toJSON (Lib l _) = toJSON l
+
+instance FromJSON Lib where
+    parseJSON obj = do
+        libLayers <- parseJSON obj
+        pure <| Lib libLayers MoveSeq.empty
 
 makeLenses 'Lib
 makeLenses 'MoveInfo

@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ViewPatterns #-}
 module MoveSeq where
 
 import DefaultImports
@@ -10,6 +11,8 @@ import qualified Move
 import Data.List (elemIndex)
 import Data.List.Index (imap, ipartition, deleteAt)
 import qualified Data.Text as Text (concat)
+import Data.Aeson
+import Data.Aeson.Types (toJSONKeyText)
 
 -- A different implementation of Pos. Preserves move order, so it can be used in Lib; should be faster to hash as well.
 newtype MoveSeq = MoveSeq { getMoves :: [Move] } deriving Show -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
@@ -45,6 +48,24 @@ longHashM moves =
 
 instance Hashable MoveSeq where
     hashWithSalt salt = hashWithSalt salt <. longHashM
+
+instance ToJSON MoveSeq where
+    toJSON = String <. toGetpos
+
+instance ToJSONKey MoveSeq where
+    toJSONKey = toJSONKeyText toGetpos
+instance FromJSON MoveSeq where
+    parseJSON = withText "MoveSeq" parser where
+        parser =
+            fromGetpos
+            .> \case
+                Nothing -> fail "Parsing MoveSeq failed"
+                Just ms -> pure ms
+
+instance FromJSONKey MoveSeq where
+    fromJSONKey = FromJSONKeyTextParser parser where
+        parser (fromGetpos -> Just ms) = pure ms
+        parser k = fail <| "cannot parse key" <> show k <> " into MoveSeq"
 
 empty :: MoveSeq
 empty = MoveSeq []
