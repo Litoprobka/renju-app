@@ -1,11 +1,9 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE LambdaCase, ViewPatterns #-}
 module MoveSeq where
 
 import DefaultImports
 import LitoUtils
 
-import Pos(Stone(..), fromMoveList, toText)
 import Move(Move)
 import qualified Move
 import Data.List (elemIndex)
@@ -66,6 +64,12 @@ instance FromJSONKey MoveSeq where
     fromJSONKey = FromJSONKeyTextParser parser where
         parser (fromGetpos -> Just ms) = pure ms
         parser k = fail <| "cannot parse key" <> show k <> " into MoveSeq"
+
+data Stone
+    = None
+    | Black
+    | White
+    deriving (Show, Eq, Ord, Enum)
 
 empty :: MoveSeq
 empty = MoveSeq []
@@ -153,5 +157,17 @@ allPrev moves =
         go (x:xs) ys = x : go ys xs
 
 toText :: (Move -> Stone -> Text) -> MoveSeq -> Text
-toText f moves =
-    Pos.toText f <| fromMoveList <| getMoves <| moves   
+toText f ms =
+    [0..14]
+    <&> (\y -> (`Move.fromIntPartial` y) <$> [0..14])
+    <&> map (f <*> flip MoveSeq.stoneAt ms) -- S-combinator, OwO (this is similar to \ m -> f m (MoveSeq.stoneAt m ms))
+    |> imap (\i -> foldl' (<>) <| align <| i + 1)
+    |> (letters :)
+    |> reverse
+    |> unlines
+    where
+        align i
+            | i > 9 = show i
+            | otherwise = " " <> show i
+
+        letters = "   a b c d e f g h i j k l m n o"  

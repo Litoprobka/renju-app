@@ -6,11 +6,9 @@ import DefaultImports
 import qualified Lib
 import Lib (Lib)
 import qualified MoveSeq
+import MoveSeq (Stone(..))
 import qualified Move
 import Move (Move)
-import Pos (Stone(..))
-import Debug
-import CLI
 
 import Monomer
 
@@ -67,7 +65,7 @@ buildUI
   :: WidgetEnv AppModel AppEvent
   -> AppModel
   -> WidgetNode AppModel AppEvent
-buildUI wenv model = widgetTree where
+buildUI _ model = widgetTree where
   widgetTree = vstack [
       hstack <| menuBarStyle [
         phButton "File",
@@ -87,15 +85,13 @@ handleEvent
   -> AppModel
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
-handleEvent wenv node model evt = case evt of
+handleEvent _ _ model evt = case evt of
   AppInit -> []
   BoardClick m -> updateLibWith <| Lib.addMove m
   MoveBack -> updateLibWith Lib.back
   RemovePos -> updateLibWith Lib.remove
   where
     updateLibWith f = [ Model (model |> lib %~ f) ]
-
--- main = startRepl
 
 main :: IO ()
 main = do

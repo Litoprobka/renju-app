@@ -1,5 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE TemplateHaskell, ViewPatterns #-}
 
 module Lib where
 
@@ -9,17 +8,13 @@ import LitoUtils
 import Move (Move)
 import qualified Move
 
-import Pos (Stone(..))
-
-import MoveSeq (MoveSeq)
+import MoveSeq (Stone(..), MoveSeq)
 import qualified MoveSeq
 
 import qualified Data.Sequence as Seq
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as Text (concat)
 import Data.Default ( Default(..) )
 import Data.Aeson
-import Data.Aeson.Types (Parser)
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -187,20 +182,6 @@ mirror = transform (\ p -> Move.fromIntPartial (14 - Move.getX p) (Move.getY p))
 
 rotate :: Lib -> Lib
 rotate = transform (\ p -> Move.fromIntPartial (Move.getY p) (14-Move.getX p))
-
--- storing Lib as readable text
--- does not store MoveInfo yet
-toText :: Lib -> Text
-toText =
-    view lib
-    .> Seq.filter (not <. null)
-    <.>> (
-        keys
-        <.>> MoveSeq.toGetpos
-        .> unlines
-        )
-    .> toList
-    .> Text.concat
 
 fromText :: Text -> Maybe Lib
 fromText =

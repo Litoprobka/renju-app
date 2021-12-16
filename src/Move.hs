@@ -1,5 +1,4 @@
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
 
 module Move (Move, fromInt, fromIntPartial, fromText, Move.toText, fromBytePartial, hashPart, transformations, getX, getY) where
 

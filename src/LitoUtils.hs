@@ -2,9 +2,9 @@ module LitoUtils where
 
 import Universum
 import Flow
-import qualified Data.Sequence as Seq
 import Move(Move)
 import qualified Move
+import Data.List.Index (imap)
 
 -- various utility functions that don't belong anywhere. Module name is LitoUtils so it doesn't conflict with anything
 
@@ -13,11 +13,16 @@ infixl 9 <.>>
 (<.>>) :: Functor f => (a -> f b) -> (b -> c) -> (a -> f c)
 (<.>>) f1 f2 x = f1 x <&> f2
 
-mapxy :: (Int -> Int -> a -> b) -> Seq (Seq a) -> Seq (Seq b)
-mapxy f =
-    Seq.mapWithIndex (\y -> Seq.mapWithIndex (`f` y))
+infixr 9 <: -- should it be <<. or <.. ?
+-- | composes a two-argument function with a one argument function
+(<:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+(<:) f1 f2 x = f1 <. f2 x
 
-map2d :: (a -> b) -> Seq (Seq a) -> Seq (Seq b)
+mapxy :: (Int -> Int -> a -> b) -> [[a]] -> [[b]]
+mapxy f =
+    imap (\y -> imap (`f` y))
+
+map2d :: (a -> b) -> [[a]] -> [[b]]
 map2d f = mapxy (\_ _ -> f)
 
 -- | Given a function f and a value x, try applying f to x. If the result is Just y, return y; otherwise, return x

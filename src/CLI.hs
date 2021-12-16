@@ -1,6 +1,4 @@
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ViewPatterns, PatternSynonyms, LambdaCase #-}
 
 module CLI where
 

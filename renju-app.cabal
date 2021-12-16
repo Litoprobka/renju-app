@@ -26,7 +26,6 @@ library
       Main
       Move
       MoveSeq
-      Pos
   other-modules:
       Paths_renju_app
   hs-source-dirs:
@@ -64,7 +63,6 @@ executable app
       LitoUtils
       Move
       MoveSeq
-      Pos
       Paths_renju_app
   hs-source-dirs:
       src
