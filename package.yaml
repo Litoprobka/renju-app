@@ -23,13 +23,13 @@ dependencies:
   - aeson
   - aeson-pretty
   - bytestring
-  - containers
   - data-default
   - directory
   - flow
   - ilist
   - microlens-th
   - monomer
+  - rrb-vector
   - text
   - universum >= 1.7.2 && < 2
   - unordered-containers

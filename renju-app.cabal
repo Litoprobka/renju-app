@@ -39,13 +39,13 @@ library
     , aeson-pretty
     , base >=4.8 && <5
     , bytestring
-    , containers
     , data-default
     , directory
     , flow
     , ilist
     , microlens-th
     , monomer
+    , rrb-vector
     , text
     , universum >=1.7.2 && <2
     , unordered-containers
@@ -75,13 +75,13 @@ executable app
     , aeson-pretty
     , base >=4.8 && <5
     , bytestring
-    , containers
     , data-default
     , directory
     , flow
     , ilist
     , microlens-th
     , monomer
+    , rrb-vector
     , text
     , universum >=1.7.2 && <2
     , unordered-containers
@@ -107,7 +107,6 @@ test-suite spec
     , aeson-pretty
     , base >=4.8 && <5
     , bytestring
-    , containers
     , data-default
     , directory
     , flow
@@ -116,6 +115,7 @@ test-suite spec
     , microlens-th
     , monomer
     , renju-app
+    , rrb-vector
     , text
     , universum >=1.7.2 && <2
     , unordered-containers

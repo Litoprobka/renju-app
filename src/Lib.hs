@@ -11,10 +11,11 @@ import qualified Move
 import MoveSeq (Stone(..), MoveSeq)
 import qualified MoveSeq
 
-import qualified Data.Sequence as Seq
+import qualified Data.RRBVector as Vec
 import qualified Data.HashMap.Strict as HashMap
 import Data.Default ( Default(..) )
 import Data.Aeson
+import qualified Data.Foldable as F (toList)
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -36,16 +37,16 @@ instance FromJSON MoveInfo where
 type LibLayer = HashMap MoveSeq MoveInfo
 -- | Represents a database file
 data Lib = Lib {
-      _lib :: Seq LibLayer
+      _lib :: Vec.Vector LibLayer
     , _moves :: MoveSeq
 } deriving (Show, Eq)
 
 instance ToJSON Lib where
-    toJSON (Lib l _) = toJSON l
+    toJSON (Lib l _) = toJSON <| F.toList l -- RRB Vector does not play well with Universum
 
 instance FromJSON Lib where
     parseJSON obj = do
-        libLayers <- parseJSON obj
+        libLayers <- Vec.fromList <$> parseJSON obj
         pure <| Lib libLayers MoveSeq.empty
 
 makeLenses 'Lib
@@ -54,7 +55,7 @@ makeLenses 'MoveInfo
 -- | Represents an empty database
 empty :: Lib
 empty =
-    Lib (one (MoveSeq.empty, def) Seq.<| Seq.replicate 225 HashMap.empty) MoveSeq.empty
+    Lib (one (MoveSeq.empty, def) Vec.<| Vec.replicate 225 HashMap.empty) MoveSeq.empty
 
 back :: Lib -> Lib
 back = over moves MoveSeq.back
@@ -64,12 +65,11 @@ back = over moves MoveSeq.back
 addPosDef :: MoveSeq -> Lib -> Lib
 addPosDef m = applyIf (not <. exists m) (addPos def m)
 
--- | | add a position with given MoveInfo to the lib. 
+-- | Add a position with given MoveInfo to the lib. 
 -- Intended for loading a lib from a text file.
 -- Overwrites MoveInfo if the position already exists
 addPos :: MoveInfo -> MoveSeq -> Lib -> Lib
-addPos mi pos =
-        lib %~ Seq.adjust (HashMap.insert pos mi) (MoveSeq.moveCount pos)
+addPos mi = updateLibLayer (`HashMap.insert` mi)
 
 -- | add a move to the lib
 addMove :: Move -> Lib -> Lib
@@ -87,8 +87,7 @@ nextMove move l =
 
 -- | removes a position from the lib
 removePos :: MoveSeq -> Lib -> Lib
-removePos pos =
-    lib %~ Seq.adjust (HashMap.delete pos) (MoveSeq.moveCount pos)
+removePos = updateLibLayer HashMap.delete
 
 -- | removes a given position and all derivable positions from the lib
 removeR :: MoveSeq -> Lib -> Lib
@@ -106,11 +105,11 @@ remove l = l |> removeR (l^.moves) |> back
 
 -- | given a function that takes a MoveSeq and LibLayer, apply it to correct LibLayer of a Lib
 libLayerHelper :: (MoveSeq -> LibLayer -> a) -> MoveSeq -> Lib -> a
-libLayerHelper f pos l = (l^.lib) `Seq.index` MoveSeq.moveCount pos |> f pos
+libLayerHelper f pos l = (l^.lib) Vec.! MoveSeq.moveCount pos |> f pos
 
--- | given a functions that changes a libLayer based on a MoveSeq, apply it to correct LibLayer of a Lib
+-- | given a function that changes a libLayer based on a MoveSeq, apply it to correct LibLayer of a Lib
 updateLibLayer :: (MoveSeq -> LibLayer -> LibLayer) -> MoveSeq -> Lib -> Lib
-updateLibLayer f pos = lib %~ Seq.adjust (f pos) (MoveSeq.moveCount pos)
+updateLibLayer f pos = lib %~ Vec.adjust (MoveSeq.moveCount pos) (f pos)
 
 -- | apply a (MoveInfo -> MoveInfo) function to a given move in a lib
 updatePos :: (MoveInfo -> MoveInfo) -> MoveSeq -> Lib -> Lib

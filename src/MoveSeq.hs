@@ -30,7 +30,7 @@ longHash =
         addHashPart move (mult, result) =
             (if mult == 1 then 2 else 1, result + mult * Move.hashPart move)
 
--- compare this to Pos.transform
+-- | Applies a given transformation (rotation or mirroring) to a MoveSeq
 transform :: (Move -> Move) -> MoveSeq -> MoveSeq
 transform f =
     getMoves
@@ -63,7 +63,7 @@ instance FromJSON MoveSeq where
 instance FromJSONKey MoveSeq where
     fromJSONKey = FromJSONKeyTextParser parser where
         parser (fromGetpos -> Just ms) = pure ms
-        parser k = fail <| "cannot parse key" <> show k <> " into MoveSeq"
+        parser k = fail <| "cannot parse key " <> show k <> " into MoveSeq"
 
 data Stone
     = None
@@ -139,7 +139,7 @@ allPrev :: MoveSeq -> [MoveSeq]
 allPrev (MoveSeq []) = []
 allPrev moves =
     getMoves moves
-    |> ipartition (\i _ -> even i) -- True for black moves, False for white moves
+    |> ipartition (\i _ -> even i) -- True for black moves, False for white moves; I could write this as (even .> const), but the explicit lambda is more readable
     |> _1 %~ copies
     |> _2 %~ copies
     |> blackOrWhite %~ imap deleteAt -- I love lens
