@@ -22,6 +22,7 @@ data AppEvent
   | Rotate
   | MoveBack
   | RemovePos
+  | BoardText Move Text
   deriving (Eq, Show)
 
 type AppWenv = WidgetEnv AppModel AppEvent
@@ -42,8 +43,13 @@ phButton :: Text -> AppNode
 phButton name = button name AppInit
 
 boardBox :: Lib -> Move -> AppNode
-boardBox l m = box_ [expandContent, onBtnPressed handleClick] stoneImage where
-
+boardBox l m =
+  box_ [expandContent, onBtnPressed handleClick] <|
+  zstack [
+    stoneImage,
+    label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor green]
+  ]
+  where
   stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, fitHeight]
   stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
     None -> "blank"
@@ -52,6 +58,10 @@ boardBox l m = box_ [expandContent, onBtnPressed handleClick] stoneImage where
 
   handleClick BtnLeft _ = BoardClick m
   handleClick _ _ = MoveBack -- middle mouse button does not work for some reason
+
+  moveText =
+    Lib.getBoardText m l
+    |> fromMaybe (maybe "" show (MoveSeq.moveIndex m <| l ^. Lib.moves))
 
 boardImage :: AppNode
 boardImage = image_ "./assets/board.png" [fitFill]
@@ -73,16 +83,16 @@ buildUI
   -> AppModel
   -> AppNode
 buildUI _ model = widgetTree where
-  widgetTree = keystroke [("C-z", MoveBack), ("C-r", Rotate)] <|
+  widgetTree = keystroke [("Left", MoveBack), ("C-r", Rotate)] <|
     vstack [
-      hstack <| menuBarStyle [
+      {-hstack <| menuBarStyle [
         phButton "File",
         phButton "Edit",
         phButton "View",
         phButton "Move"
       ],
       separatorLine,
-      spacer,
+      spacer,-}
         zstack <| [
           boardImage,
           boardGrid (model ^. lib)
@@ -100,7 +110,8 @@ handleEvent _ _ model evt = case evt of
   BoardClick m -> updateLibWith <| Lib.addMove m
   MoveBack -> updateLibWith Lib.back
   RemovePos -> updateLibWith Lib.remove
-  Rotate -> updateLibWith <| Lib.rotate -- TODO: make it force a GUI redraw
+  BoardText m t -> updateLibWith <| Lib.addBoardText m t -- placeholder
+  Rotate -> updateLibWith Lib.rotate -- TODO: make it force a GUI redraw
   where
     updateLibWith f = [ Model (model |> lib %~ f) ]
 
@@ -112,6 +123,8 @@ main = do
       appWindowTitle "R",
       appTheme darkTheme,
       appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf",
-      appInitEvent AppInit
+      appInitEvent AppInit,
+      appWindowState <| MainWindowNormal (765, 765),
+      appWindowResizable False
       ]
     model = AppModel Lib.empty

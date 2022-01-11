@@ -9,6 +9,9 @@
    id="svg5"
    inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
    sodipodi:docname="white-stone.svg"
+   inkscape:export-filename="/home/litoprobka/sources/renju-app/assets/white-stone.png"
+   inkscape:export-xdpi="128"
+   inkscape:export-ydpi="128"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -24,10 +27,10 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="1.2953002"
-     inkscape:cx="274.06774"
+     inkscape:cx="-73.342072"
      inkscape:cy="193.39146"
-     inkscape:window-width="2560"
-     inkscape:window-height="1440"
+     inkscape:window-width="1276"
+     inkscape:window-height="1412"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -40,16 +43,10 @@
      id="layer1"
      transform="translate(-54.484573,-96.520126)">
     <circle
-       style="fill:#1a1a1a;stroke-width:0.264583"
+       style="fill:#f2f2f2;stroke-width:0.264583"
        id="path762"
        cx="104.56566"
        cy="146.60121"
        r="50.081085" />
-    <circle
-       style="fill:#f2f2f2;stroke-width:0.248024"
-       id="path980"
-       cx="104.46328"
-       cy="146.75897"
-       r="46.193279" />
   </g>
 </svg>

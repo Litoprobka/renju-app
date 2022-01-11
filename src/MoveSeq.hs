@@ -88,14 +88,19 @@ moveCount =
     getMoves
     .> length
 
-stoneAt :: Move -> MoveSeq -> Stone
-stoneAt move =
+moveIndex :: Move -> MoveSeq -> Maybe Int
+moveIndex move =
     getMoves
     .> reverse
     .> elemIndex move
+    <.>> (+1)
+
+stoneAt :: Move -> MoveSeq -> Stone
+stoneAt move =
+    moveIndex move
     .> \case
         Nothing -> None
-        Just i | even i -> Black -- indices start from zero, so black moves are even
+        Just i | odd i -> Black
                | otherwise -> White
 
 notIn :: Move -> MoveSeq -> Bool
