@@ -19,9 +19,13 @@ newtype AppModel = AppModel {
 data AppEvent
   = AppInit
   | BoardClick Move
+  | Rotate
   | MoveBack
   | RemovePos
   deriving (Eq, Show)
+
+type AppWenv = WidgetEnv AppModel AppEvent
+type AppNode = WidgetNode AppModel AppEvent
 
 makeLenses 'AppModel
 
@@ -34,54 +38,60 @@ menuBarStyle = map (`styleBasic` [
   ])
 
 -- a placeholder button
-phButton :: Text -> WidgetNode s AppEvent
+phButton :: Text -> AppNode
 phButton name = button name AppInit
 
-boardButton :: Lib -> Move -> WidgetNode s AppEvent
-boardButton l m = boardButtonStyle (l ^. Lib.moves |> MoveSeq.stoneAt m) <| button (Move.toText m) <| BoardClick m
+boardBox :: Lib -> Move -> AppNode
+boardBox l m = box_ [expandContent, onBtnPressed handleClick] stoneImage where
 
-boardButtonStyle :: CmbStyleBasic t => Stone -> t -> t
-boardButtonStyle stone = flip styleBasic [
-  radius 0,
-  case stone of
-    None  -> bgColor gray
-    Black -> bgColor darkGray
-    White -> bgColor lightGray
-  ] 
+  stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, fitHeight]
+  stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
+    None -> "blank"
+    Black -> "black-stone"
+    White -> "white-stone"
 
-buttonGrid :: Lib -> WidgetNode s AppEvent
-buttonGrid l =
+  handleClick BtnLeft _ = BoardClick m
+  handleClick _ _ = MoveBack -- middle mouse button does not work for some reason
+
+boardImage :: AppNode
+boardImage = image_ "./assets/board.png" [fitFill]
+
+boardGrid :: Lib -> AppNode
+boardGrid l =
   [0..14]
   <&> (\y ->
     [0..14]
     <&> (`Move.fromIntPartial` y)
-    <&> boardButton l
+    <&> boardBox l
   )
   |> reverse
   |> map hgrid
   |> vgrid
 
 buildUI
-  :: WidgetEnv AppModel AppEvent
+  :: AppWenv
   -> AppModel
-  -> WidgetNode AppModel AppEvent
+  -> AppNode
 buildUI _ model = widgetTree where
-  widgetTree = vstack [
+  widgetTree = keystroke [("C-z", MoveBack), ("C-r", Rotate)] <|
+    vstack [
       hstack <| menuBarStyle [
         phButton "File",
         phButton "Edit",
         phButton "View",
-        phButton "Move",
-        button "Back" MoveBack
+        phButton "Move"
       ],
       separatorLine,
       spacer,
-      buttonGrid (model ^. lib)
+        zstack <| [
+          boardImage,
+          boardGrid (model ^. lib)
+        ]
     ]
 
 handleEvent
-  :: WidgetEnv AppModel AppEvent
-  -> WidgetNode AppModel AppEvent
+  :: AppWenv
+  -> AppNode
   -> AppModel
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
@@ -90,6 +100,7 @@ handleEvent _ _ model evt = case evt of
   BoardClick m -> updateLibWith <| Lib.addMove m
   MoveBack -> updateLibWith Lib.back
   RemovePos -> updateLibWith Lib.remove
+  Rotate -> updateLibWith <| Lib.rotate -- TODO: make it force a GUI redraw
   where
     updateLibWith f = [ Model (model |> lib %~ f) ]
 
