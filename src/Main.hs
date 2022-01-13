@@ -50,9 +50,14 @@ boardBox l m =
     label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor green]
   ]
   where
+  currentPos = view Lib.moves l
   stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, fitHeight]
   stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
-    None -> "blank"
+    None -> if not <| Lib.exists (MoveSeq.makeMove' m currentPos) l then
+        "blank"
+      else
+        "move-exists-" <> if even <| MoveSeq.moveCount currentPos then "black" else "white"
+
     Black -> "black-stone"
     White -> "white-stone"
 
