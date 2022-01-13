@@ -1,6 +1,6 @@
 cabal-version: 2.0
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -26,7 +26,10 @@ library
       Main
       Move
       MoveSeq
+      MoveSet
   other-modules:
+      Paths_renju_app
+  autogen-modules:
       Paths_renju_app
   hs-source-dirs:
       src
@@ -43,6 +46,7 @@ library
     , directory
     , flow
     , ilist
+    , microlens
     , microlens-th
     , monomer
     , rrb-vector
@@ -63,6 +67,9 @@ executable app
       LitoUtils
       Move
       MoveSeq
+      MoveSet
+      Paths_renju_app
+  autogen-modules:
       Paths_renju_app
   hs-source-dirs:
       src
@@ -79,6 +86,7 @@ executable app
     , directory
     , flow
     , ilist
+    , microlens
     , microlens-th
     , monomer
     , rrb-vector
@@ -97,6 +105,8 @@ test-suite spec
       MoveSeqSpec
       MoveSpec
       Paths_renju_app
+  autogen-modules:
+      Paths_renju_app
   hs-source-dirs:
       test
   default-extensions:
@@ -112,6 +122,7 @@ test-suite spec
     , flow
     , hspec ==2.*
     , ilist
+    , microlens
     , microlens-th
     , monomer
     , renju-app

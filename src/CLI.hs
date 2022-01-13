@@ -37,7 +37,7 @@ repl l = do
     case text of
         "quit" -> pass
         "back" -> repl <| back l
-        "remove" -> repl (removeR (l^.moves) l |> back)
+        "remove" -> repl (removeR (l^.moveSet) l |> back)
 
         "save" `WithArg` filePath -> (encodePretty l |> BS.writeFile (toString filePath)) >> repl l
         "load" `WithArg` filePath -> do

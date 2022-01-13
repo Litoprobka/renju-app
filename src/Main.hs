@@ -5,8 +5,9 @@ module Main where
 import DefaultImports
 import qualified Lib
 import Lib (Lib)
+import qualified MoveSet
 import qualified MoveSeq
-import MoveSeq (Stone(..))
+import MoveSet (Stone(..))
 import qualified Move
 import Move (Move)
 
@@ -50,16 +51,16 @@ boardBox l m =
     label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor green]
   ]
   where
-  currentPos = view Lib.moves l
+  currentPos = l^. Lib.moveSet
   stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, fitHeight]
-  stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
-    None -> if not <| Lib.exists (MoveSeq.makeMove' m currentPos) l then
+  stoneAsset = case currentPos |> MoveSet.stoneAt m of
+    Nothing -> if not <| Lib.exists (MoveSet.makeMove' m currentPos) l then
         "blank"
       else
-        "move-exists-" <> if even <| MoveSeq.moveCount currentPos then "black" else "white"
+        "move-exists-" <> if even <| MoveSet.moveCount currentPos then "black" else "white"
 
-    Black -> "black-stone"
-    White -> "white-stone"
+    Just Black -> "black-stone"
+    Just White -> "white-stone"
 
   handleClick BtnLeft _ = BoardClick m
   handleClick _ _ = MoveBack -- middle mouse button does not work for some reason

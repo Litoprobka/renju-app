@@ -27,6 +27,7 @@ dependencies:
   - directory
   - flow
   - ilist
+  - microlens
   - microlens-th
   - monomer
   - rrb-vector

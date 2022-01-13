@@ -1,8 +1,9 @@
 module LitoUtils where
 
-import Universum
+import DefaultImports
 import Flow
 import Data.List.Index (imap)
+import qualified Data.HashMap.Strict as HashMap
 
 -- various utility functions that don't belong anywhere. Module name is LitoUtils so it doesn't conflict with anything
 
@@ -41,3 +42,13 @@ applyIf p f x = if p x then f x else x
 
 applyIf2 :: (a -> b -> Bool) -> (a -> b -> b) -> a -> b -> b -- am I going insane?
 applyIf2 p f x = applyIf (p x) (f x)
+
+partitionWithKey :: Hashable k => (k -> v -> Bool) -> HashMap k v -> (HashMap k v, HashMap k v)
+partitionWithKey p = HashMap.foldrWithKey' f (HashMap.empty, HashMap.empty) where
+    f k v maps@(_, _) =
+       maps |> (if p k v then _1 else _2) %~ HashMap.insert k v
+
+partition :: Hashable k => (v -> Bool) -> HashMap k v -> (HashMap k v, HashMap k v)
+partition p = partitionWithKey <| const p
+        
+        

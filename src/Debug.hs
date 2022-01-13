@@ -2,7 +2,7 @@ module Debug where
 
 import DefaultImports
 
-import qualified MoveSeq
+import qualified MoveSet
 import qualified Move
 import qualified Lib
 
@@ -18,20 +18,20 @@ pp x y = fromJust <| Move.fromInt x y
 pt :: Text -> Move.Move
 pt = fromJust <. Move.fromText
 
-gg :: Text -> MoveSeq.MoveSeq
-gg = fromJust <. MoveSeq.fromGetpos
+gg :: Text -> MoveSet.MoveSet
+gg = fromJust <. MoveSet.fromGetpos
 
-mm :: Move.Move -> MoveSeq.MoveSeq -> MoveSeq.MoveSeq
-mm = MoveSeq.makeMove'
+mm :: Move.Move -> MoveSet.MoveSet -> MoveSet.MoveSet
+mm = MoveSet.makeMove'
 
-mmp :: Int -> Int -> MoveSeq.MoveSeq -> MoveSeq.MoveSeq
+mmp :: Int -> Int -> MoveSet.MoveSet -> MoveSet.MoveSet
 mmp x y = mm <| pp x y
 
-mmt :: Text -> MoveSeq.MoveSeq -> MoveSeq.MoveSeq
+mmt :: Text -> MoveSet.MoveSet -> MoveSet.MoveSet
 mmt = mm <. pt
 
-tt :: [Text] -> MoveSeq.MoveSeq
-tt = foldl' (flip mmt) MoveSeq.empty 
+tt :: [Text] -> MoveSet.MoveSet
+tt = foldl' (flip mmt) MoveSet.empty 
 
 printl :: Lib.Lib -> IO ()
 printl = Lib.printLib
