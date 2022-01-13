@@ -9,6 +9,7 @@ import qualified MoveSeq
 import MoveSeq (Stone(..))
 import qualified Move
 import Move (Move)
+import qualified Data.Set.Ordered as O
 
 import Monomer
 

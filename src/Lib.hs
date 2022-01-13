@@ -16,6 +16,7 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.Default ( Default(..) )
 import Data.Aeson
 import qualified Data.Foldable as F (toList)
+import Data.Text (snoc)
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -165,8 +166,7 @@ printLib l =
         char ((`getBoardText` l) -> Just bt) None = 
             safeHead bt
             |> fromMaybe ' '
-            |> (one :: Char -> Text)
-            |> (" " <>)
+            |> snoc " "
         char move None = if exists (MoveSeq.makeMove' move pos) l then " +" else " ."
         char _ Black = " x"
         char _ White = " o"

@@ -29,6 +29,7 @@ dependencies:
   - ilist
   - microlens-th
   - monomer
+  - ordered-containers
   - rrb-vector
   - text
   - universum >= 1.7.2 && < 2

@@ -29,15 +29,6 @@ map2d f = mapxy (\_ _ -> f)
 tryApply :: (a -> Maybe a) -> a -> a
 tryApply f x = fromMaybe x (f x)
 
--- | Shared part of Pos.fromGetpos and MoveSeq.fromGetpos
-fromGetpos' :: Text -> Maybe [Move]
-fromGetpos' = (<> "a") .> foldl' f ("", []) .> snd .> sequence where
-
-    f :: (String, [Maybe Move]) -> Char -> (String, [Maybe Move])
-    f (acc, moves) c
-        | c >= 'a' && c <= 'o' = ([c], if acc /= "" then Move.fromText (Universum.toText acc) : moves else moves) -- if we encounter a char, try to parse the current accumulator to Move, then append the result to moves. Reset the accumulator.
-        | otherwise = (acc ++ [c], moves)                                                                         -- if we encounter a digit, add it to the accumulator.
-
 applyAll :: [a -> a] -> a -> a
 applyAll = foldl' (.>) id
 
