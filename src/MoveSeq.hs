@@ -11,6 +11,7 @@ import Data.List.Index (imap, ipartition, deleteAt)
 import qualified Data.Text as Text (concat)
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
+import Data.Text (snoc)
 
 -- A different implementation of Pos. Preserves move order, so it can be used in Lib; should be faster to hash as well.
 newtype MoveSeq = MoveSeq { getMoves :: [Move] } deriving Show -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
@@ -118,7 +119,19 @@ makeMove' move =
     tryApply (makeMove move)
 
 fromGetpos :: Text -> Maybe MoveSeq
-fromGetpos = fromGetpos' <.>> MoveSeq
+fromGetpos = 
+    (`snoc` 'a') .> foldl' f ("", [])
+    .> snd
+    .> sequence
+    <.>> MoveSeq
+    where
+
+    f :: (Text, [Maybe Move]) -> Char -> (Text, [Maybe Move])
+    f (acc, moves) c
+        | isCoordLetter c = (one c, if acc /= "" then Move.fromText acc : moves else moves) -- if we encounter a char, try to parse the current accumulator to Move, then append the result to moves. Reset the accumulator.
+        | otherwise = (acc `snoc` c, moves)                                                 -- if we encounter a digit, add it to the accumulator.
+
+    isCoordLetter c = c >= 'a' && c <= 'o'
 
 toGetpos :: MoveSeq -> Text
 toGetpos =
