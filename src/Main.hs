@@ -88,7 +88,7 @@ buildUI
   -> AppModel
   -> AppNode
 buildUI _ model = widgetTree where
-  widgetTree = keystroke [("Left", MoveBack), ("C-r", Rotate)] <|
+  widgetTree = keystroke [("Left", MoveBack), ("C-r", Rotate), ("Delete", RemovePos), ("Backspace", RemovePos)] <|
     vstack [
       {-hstack <| menuBarStyle [
         phButton "File",

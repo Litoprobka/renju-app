@@ -16,6 +16,11 @@ infixr 9 <: -- should it be <<. or <.. ?
 (<:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (<:) f1 f2 x = f1 <. f2 x
 
+infixl 9 ..> -- :> is taken
+-- | composes a two-argument function with a one argument function
+(..>) :: (a -> b -> c) -> (c -> d) -> a -> b -> d
+(..>) f1 f2 x = f1 x .> f2
+
 mapxy :: (Int -> Int -> a -> b) -> [[a]] -> [[b]]
 mapxy f =
     imap (\y -> imap (`f` y))

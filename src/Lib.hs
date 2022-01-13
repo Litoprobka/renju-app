@@ -31,7 +31,7 @@ instance ToJSON MoveInfo where
     toJSON (MoveInfo c bt) = object ["comment" .= c, "board-text" .= bt]
 
 instance FromJSON MoveInfo where
-    parseJSON = withObject "MoveInfo" <| \obj -> MoveInfo 
+    parseJSON = withObject "MoveInfo" <| \obj -> MoveInfo
             <$> obj .: "comment"
             <*> obj .: "board-text"
 
@@ -88,18 +88,18 @@ nextMove move l =
 
 -- | removes a position from the lib
 removePos :: MoveSeq -> Lib -> Lib
-removePos = updateLibLayer HashMap.delete
+removePos ms
+    | MoveSeq.isEmpty ms = const Lib.empty -- empty board can't be deleted
+    | otherwise = ms |> updateLibLayer HashMap.delete
 
 -- | removes a given position and all derivable positions from the lib
 removeR :: MoveSeq -> Lib -> Lib
-removeR pos
-    | MoveSeq.isEmpty pos = const Lib.empty -- MoveSeq.allPrev does not work properly for positions with one move
-    | otherwise =
-        removePos pos
-        .> applyAll (MoveSeq.mapNext (applyIf2 isOrphan removeR) pos)
-        where
-            isOrphan :: MoveSeq -> Lib -> Bool
-            isOrphan pos' l' = exists pos' l' && (all (not <. flip exists l') <| MoveSeq.allPrev pos')
+removeR pos =
+    removePos pos
+    .> applyAll (MoveSeq.mapNext (applyIf2 isOrphan removeR) pos)
+    where
+        isOrphan :: MoveSeq -> Lib -> Bool
+        isOrphan pos' l' = exists pos' l' && (all (not <. flip exists l') <| MoveSeq.allPrev pos')
 -- | removes current position from the lib
 remove :: Lib -> Lib
 remove l = l |> removeR (l^.moves) |> back
@@ -163,7 +163,7 @@ printLib l =
         pos = l^.moves
 
         --char move None = case MoveSeq.makeMove' move pos of
-        char ((`getBoardText` l) -> Just bt) None = 
+        char ((`getBoardText` l) -> Just bt) None =
             safeHead bt
             |> fromMaybe ' '
             |> snoc " "

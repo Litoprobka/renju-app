@@ -36,7 +36,7 @@ transform :: (Move -> Move) -> MoveSeq -> MoveSeq
 transform f =
     getMoves
     <.>> f
-    .> MoveSeq 
+    .> MoveSeq
 
 longHashM :: MoveSeq -> Integer
 longHashM moves =
@@ -119,7 +119,7 @@ makeMove' move =
     tryApply (makeMove move)
 
 fromGetpos :: Text -> Maybe MoveSeq
-fromGetpos = 
+fromGetpos =
     (`snoc` 'a') .> foldl' f ("", [])
     .> snd
     .> sequence
@@ -157,21 +157,22 @@ allPrev :: MoveSeq -> [MoveSeq]
 allPrev (MoveSeq []) = []
 allPrev moves =
     getMoves moves
+    |> reverse
     |> ipartition (\i _ -> even i) -- True for black moves, False for white moves; I could write this as (even .> const), but the explicit lambda is more readable
     |> _1 %~ copies
     |> _2 %~ copies
     |> blackOrWhite %~ imap deleteAt -- I love lens
     |> uncurry (zipWith toMoveSeq) -- figuring this out took quite a bit of time
-    where 
+    where
         copies = replicate <| (moveCount moves - 1) `div` 2 + 1 -- 4 -> 2, 5 -> 3, 17 -> 8...
         blackOrWhite = if odd (moveCount moves) then _1 else _2 -- move count is odd => last move was black => try removing black moves
-        
+
         toMoveSeq :: [Move] -> [Move] -> MoveSeq
         toMoveSeq b w
             | even <| moveCount moves = go b w |> MoveSeq -- move count is even => last move was white => previous to last move was black => start with black
             | otherwise = go w b |> MoveSeq
         go [x] [] = [x]
-        go [ ] _ = error "length mismatch"
+        go [] _ = error "length mismatch"
         go (x:xs) ys = x : go ys xs
 
 toText :: (Move -> Stone -> Text) -> MoveSeq -> Text
@@ -188,4 +189,4 @@ toText f ms =
             | i > 9 = show i
             | otherwise = " " <> show i
 
-        letters = "   a b c d e f g h i j k l m n o"  
+        letters = "   a b c d e f g h i j k l m n o" 
