@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell, ViewPatterns #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Lib where
 
@@ -132,9 +133,16 @@ currentPos _ = error "current pos does not exist in the lib (impossible)"
 addComment :: Text -> Lib -> Lib
 addComment t l = updatePos (set comment t) (l^.moves) l
 
--- | returns the comment of the current position
+-- | Returns the comment of the current position, "" if there is none
 getComment :: Lib -> Text
 getComment = currentPos .> view comment
+
+-- Returns the comment of a given position, "" if there is none or the position does not exist in the lib
+getCommentOf :: MoveSeq -> Lib -> Text
+getCommentOf =
+    getPos
+    ..> map (view comment)
+    ..> fromMaybe ""
 
 getBoardText :: Move -> Lib -> Maybe Text
 getBoardText move l = l
@@ -146,7 +154,7 @@ getBoardText move l = l
             |> view moves
             |> MoveSeq.makeMove' move
 
--- | replcae board text of a given move for the current position
+-- | replace board text of a given move for the current position
 addBoardText :: Move -> Text -> Lib -> Lib
 addBoardText m t l = updatePos (over boardText upd) pos l where
     btpos = MoveSeq.makeMove' m pos

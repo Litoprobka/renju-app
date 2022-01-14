@@ -24,6 +24,7 @@ data AppEvent
   | MoveBack
   | RemovePos
   | BoardText Move Text
+  | Comment Text
   deriving (Eq, Show)
 
 type AppWenv = WidgetEnv AppModel AppEvent
@@ -45,7 +46,8 @@ phButton name = button name AppInit
 
 boardBox :: Lib -> Move -> AppNode
 boardBox l m =
-  box_ [expandContent, onBtnPressed handleClick] <|
+  tooltip' <|
+  box_ [onBtnPressed handleClick] <|
   zstack [
     stoneImage,
     label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor color]
@@ -73,7 +75,11 @@ boardBox l m =
     | (MoveSeq.getMoves currentPos |> safeHead) == Just m = green
     | (MoveSeq.moveIndex m currentPos <&> even) == Just True = black
     | otherwise = white
-    
+
+  tooltip' = case flip Lib.getCommentOf l <$> MoveSeq.makeMove m currentPos of -- MoveSeq.makeMove is useful for once
+    Nothing -> id
+    Just "" -> id
+    Just comment -> tooltip comment
 
 boardImage :: AppNode
 boardImage = image_ "./assets/board.png" [fitFill]
@@ -95,7 +101,7 @@ buildUI
   -> AppModel
   -> AppNode
 buildUI _ model = widgetTree where
-  widgetTree = keystroke [("Left", MoveBack), ("C-r", Rotate), ("Delete", RemovePos)] <|
+  widgetTree = keystroke [("Left", MoveBack), ("C-r", Rotate), ("Delete", RemovePos), ("C-c", Comment <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)] <|
     vstack [
       {-hstack <| menuBarStyle [
         phButton "File",
@@ -124,6 +130,7 @@ handleEvent _ _ model evt = case evt of
   RemovePos -> updateLibWith Lib.remove
   BoardText m t -> updateLibWith <| Lib.addBoardText m t -- placeholder
   Rotate -> updateLibWith Lib.rotate -- TODO: make it force a GUI redraw
+  Comment t -> updateLibWith <| Lib.addComment t
   where
     updateLibWith f = [ Model (model |> lib %~ f) ]
 
