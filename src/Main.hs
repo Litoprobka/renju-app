@@ -72,9 +72,11 @@ boardBox l m =
     |> fromMaybe (maybe "" show (MoveSeq.moveIndex m <| l ^. Lib.moves))
 
   color
-    | (MoveSeq.getMoves currentPos |> safeHead) == Just m = green
-    | (MoveSeq.moveIndex m currentPos <&> even) == Just True = black
-    | otherwise = white
+    | (MoveSeq.getMoves currentPos |> safeHead) == Just m = green -- current move
+    | otherwise = case MoveSeq.moveIndex m currentPos of
+      Just (even -> True) -> black
+      Just _ -> white
+      Nothing -> green -- board text
 
   tooltip' = case flip Lib.getCommentOf l <$> MoveSeq.makeMove m currentPos of -- MoveSeq.makeMove is useful for once
     Nothing -> id
