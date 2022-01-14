@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Main where
 
@@ -47,7 +48,7 @@ boardBox l m =
   box_ [expandContent, onBtnPressed handleClick] <|
   zstack [
     stoneImage,
-    label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor green]
+    label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor color]
   ]
   where
   currentPos = view Lib.moves l
@@ -67,6 +68,12 @@ boardBox l m =
   moveText =
     Lib.getBoardText m l
     |> fromMaybe (maybe "" show (MoveSeq.moveIndex m <| l ^. Lib.moves))
+
+  color
+    | (MoveSeq.getMoves currentPos |> safeHead) == Just m = green
+    | (MoveSeq.moveIndex m currentPos <&> even) == Just True = black
+    | otherwise = white
+    
 
 boardImage :: AppNode
 boardImage = image_ "./assets/board.png" [fitFill]
