@@ -20,6 +20,11 @@ pattern WithArg command arg <- (withArg -> Just (command, arg))
 pattern Move :: Move -> Text
 pattern Move move <- (Move.fromText -> Just move)
 
+data LibLoadError
+    = FileNotFound
+    | ParseFailure
+    deriving (Enum, Show, Eq)
+
 withArg :: Text -> Maybe (Text, Text)
 withArg =
     words .> \case
@@ -29,6 +34,23 @@ withArg =
 
 printLib' :: Lib -> IO Lib
 printLib' l = printLib l >> pure l
+
+loadLib :: Text -> IO (Either LibLoadError Lib)
+loadLib filePath = do
+    fileExists <- doesFileExist <| toString filePath
+    if not fileExists then
+            pure <| Left FileNotFound
+        else
+            BS.readFile (toString filePath)
+            <&> decode
+            <&> \case
+                Just newLib -> Right newLib
+                Nothing -> Left ParseFailure
+
+saveLib :: Text -> Lib -> IO ()
+saveLib filePath =
+    encodePretty
+    .> BS.writeFile (toString filePath)
 
 repl :: Lib -> IO ()
 repl l = do
@@ -40,15 +62,11 @@ repl l = do
         "remove" -> repl (removeR (l^.moves) l |> back)
 
         "save" `WithArg` filePath -> (encodePretty l |> BS.writeFile (toString filePath)) >> repl l
-        "load" `WithArg` filePath -> do
-            fileExists <- doesFileExist <| toString filePath
-            if fileExists -- there should be a better way to write this code block
-                then do
-                    l' <- BS.readFile <| toString filePath
-                    case decode l' of
-                        Just newLib -> repl newLib
-                        Nothing -> putTextLn "invalid lib file" >> repl l
-                else putTextLn "file not found" >> repl l
+        "load" `WithArg` filePath ->
+            loadLib filePath
+            >>= \case
+                Left err -> print err >> repl l
+                Right newLib -> repl newLib 
 
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l

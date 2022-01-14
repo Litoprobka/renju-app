@@ -1,6 +1,11 @@
 packages:
     ./
 
+source-repository-package
+        type: git
+        location: https://github.com/fjvallarino/monomer.git
+        tag: d34cd780c8cc0244b40da09e69dcbff316e75555
+
 package nanovg
     flags: +stb_truetype
 

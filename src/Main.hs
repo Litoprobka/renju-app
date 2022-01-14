@@ -10,15 +10,19 @@ import qualified MoveSeq
 import MoveSeq (Stone(..))
 import qualified Move
 import Move (Move)
+import CLI (loadLib, saveLib, LibLoadError(..))
 
 import Monomer
 
 newtype AppModel = AppModel {
-  _lib :: Lib.Lib
+  _lib :: Lib
 } deriving (Eq, Show)
 
 data AppEvent
-  = AppInit
+  = LoadDefaultLib
+  | SaveDefaultLib
+  | Blank ()
+  | NewLib Lib
   | BoardClick Move
   | Rotate
   | MoveBack
@@ -31,18 +35,6 @@ type AppWenv = WidgetEnv AppModel AppEvent
 type AppNode = WidgetNode AppModel AppEvent
 
 makeLenses 'AppModel
-
-menuBarStyle :: CmbStyleBasic t => [t] -> [t]
-menuBarStyle = map (`styleBasic` [
-  radius 0
-  -- bgColor darkGray,
-  -- hlColor  lightGray,
-  -- sndColor lightGray
-  ])
-
--- a placeholder button
-phButton :: Text -> AppNode
-phButton name = button name AppInit
 
 boardBox :: Lib -> Move -> AppNode
 boardBox l m =
@@ -65,7 +57,8 @@ boardBox l m =
     White -> "white-stone-gradient"
 
   handleClick BtnLeft _ = BoardClick m
-  handleClick _ _ = MoveBack -- middle mouse button does not work for some reason
+  handleClick BtnMiddle _ = BoardText m "board text"
+  handleClick BtnRight _ = MoveBack
 
   moveText =
     Lib.getBoardText m l
@@ -126,7 +119,10 @@ handleEvent
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent _ _ model evt = case evt of
-  AppInit -> []
+  Blank () -> []
+  LoadDefaultLib -> one <| Task <| NewLib <$> (throwError =<< loadLib "lib-autosave")
+  SaveDefaultLib -> one <| Task <| Blank <$> saveLib "lib-autosave" (model ^. lib)
+  NewLib newLib -> updateLibWith (const newLib)
   BoardClick m -> updateLibWith <| Lib.addMove m
   MoveBack -> updateLibWith Lib.back
   RemovePos -> updateLibWith Lib.remove
@@ -136,6 +132,10 @@ handleEvent _ _ model evt = case evt of
   where
     updateLibWith f = [ Model (model |> lib %~ f) ]
 
+    throwError :: Either LibLoadError Lib -> IO Lib
+    throwError (Left err) = error <| show err
+    throwError (Right newLib) = return newLib
+
 main :: IO ()
 main = do
   startApp model handleEvent buildUI config
@@ -144,7 +144,8 @@ main = do
       appWindowTitle "R",
       appTheme darkTheme,
       appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf",
-      appInitEvent AppInit,
+      appInitEvent LoadDefaultLib,
+      appDisposeEvent SaveDefaultLib,
       appWindowState <| MainWindowNormal (765, 765),
       appWindowResizable False
       ]

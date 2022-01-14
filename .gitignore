@@ -10,4 +10,4 @@ dist-docs.*/
 *.ps
 *.ser
 cabal.project.local*
-lib
+lib-autosave
