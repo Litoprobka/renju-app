@@ -6,7 +6,6 @@ import DefaultImports
 import LitoUtils
 import Move(Move)
 import qualified MoveSet as MS
-import Data.List(elemIndex)
 
 data MoveSeq = MoveSeq {
     _moveList :: [Move],
@@ -39,13 +38,6 @@ makeMove m ms = do
 
 makeMove' :: Move -> MoveSeq -> MoveSeq
 makeMove' m ms = fromMaybe ms (makeMove m ms)
-
-moveIndex :: Move -> MoveSeq -> Maybe Int
-moveIndex m =
-    view moveList
-    .> reverse
-    .> elemIndex m
-    <.>> (+1)
 
 transform :: (Move -> Move) -> MoveSeq -> MoveSeq
 transform f =

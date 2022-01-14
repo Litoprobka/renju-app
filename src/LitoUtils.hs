@@ -1,7 +1,6 @@
 module LitoUtils where
 
 import DefaultImports
-import Flow
 import Data.List.Index (imap)
 import qualified Data.HashMap.Strict as HashMap
 

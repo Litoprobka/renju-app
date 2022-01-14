@@ -10,6 +10,8 @@ import qualified MoveSeq
 import MoveSet (Stone(..))
 import qualified Move
 import Move (Move)
+import Data.Text(toLower)
+import qualified Data.HashMap.Strict as HashMap
 
 import Monomer
 
@@ -31,20 +33,8 @@ type AppNode = WidgetNode AppModel AppEvent
 
 makeLenses 'AppModel
 
-menuBarStyle :: CmbStyleBasic t => [t] -> [t]
-menuBarStyle = map (`styleBasic` [
-  radius 0
-  -- bgColor darkGray,
-  -- hlColor  lightGray,
-  -- sndColor lightGray
-  ])
-
--- a placeholder button
-phButton :: Text -> AppNode
-phButton name = button name AppInit
-
-boardBox :: Lib -> Move -> AppNode
-boardBox l m =
+boardBox :: Lib -> HashMap Move Int -> Move -> AppNode
+boardBox l mi m =
   box_ [expandContent, onBtnPressed handleClick] <|
   zstack [
     stoneImage,
@@ -57,7 +47,7 @@ boardBox l m =
     Nothing -> if not <| Lib.exists (MoveSet.makeMove' m currentPos) l then
         "blank"
       else
-        "move-exists-" <> if even <| MoveSet.moveCount currentPos then "black" else "white"
+        ("move-exists-" <>) <| toLower <| show <| currentPos ^. MoveSet.nextColor
 
     Just Black -> "black-stone"
     Just White -> "white-stone"
@@ -67,7 +57,7 @@ boardBox l m =
 
   moveText =
     Lib.getBoardText m l
-    |> fromMaybe (maybe "" show (MoveSeq.moveIndex m <| l ^. Lib.moves))
+    |> fromMaybe (maybe "" show (HashMap.lookup m mi))
 
 boardImage :: AppNode
 boardImage = image_ "./assets/board.png" [fitFill]
@@ -78,11 +68,17 @@ boardGrid l =
   <&> (\y ->
     [0..14]
     <&> (`Move.fromIntPartial` y)
-    <&> boardBox l
+    <&> boardBox l moveIndices
   )
-  |> reverse
+  |> DefaultImports.reverse
   |> map hgrid
   |> vgrid
+  where
+    moveIndices :: HashMap Move Int
+    moveIndices =
+      l ^. Lib.moves . MoveSeq.moveList
+      |> foldr' (\ m (i, l') -> (i + 1, HashMap.insert m i l')) (1, HashMap.empty)
+      |> snd
 
 buildUI
   :: AppWenv
@@ -90,19 +86,9 @@ buildUI
   -> AppNode
 buildUI _ model = widgetTree where
   widgetTree = keystroke [("Left", MoveBack), ("C-r", Rotate), ("Delete", RemovePos), ("Backspace", RemovePos)] <|
-    vstack [
-      {-hstack <| menuBarStyle [
-        phButton "File",
-        phButton "Edit",
-        phButton "View",
-        phButton "Move"
-      ],
-      separatorLine,
-      spacer,-}
-        zstack <| [
-          boardImage,
-          boardGrid (model ^. lib)
-        ]
+    zstack <| [
+      boardImage,
+      boardGrid (model ^. lib)
     ]
 
 handleEvent
