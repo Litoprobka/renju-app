@@ -58,8 +58,8 @@ boardBox l m =
       else
         "move-exists-" <> if even <| MoveSeq.moveCount currentPos then "black" else "white"
 
-    Black -> "black-stone"
-    White -> "white-stone"
+    Black -> "black-stone-gradient"
+    White -> "white-stone-gradient"
 
   handleClick BtnLeft _ = BoardClick m
   handleClick _ _ = MoveBack -- middle mouse button does not work for some reason

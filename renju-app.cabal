@@ -1,6 +1,6 @@
 cabal-version: 2.0
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -27,6 +27,8 @@ library
       Move
       MoveSeq
   other-modules:
+      Paths_renju_app
+  autogen-modules:
       Paths_renju_app
   hs-source-dirs:
       src
@@ -64,6 +66,8 @@ executable app
       Move
       MoveSeq
       Paths_renju_app
+  autogen-modules:
+      Paths_renju_app
   hs-source-dirs:
       src
   default-extensions:
@@ -96,6 +100,8 @@ test-suite spec
       LibSpec
       MoveSeqSpec
       MoveSpec
+      Paths_renju_app
+  autogen-modules:
       Paths_renju_app
   hs-source-dirs:
       test
