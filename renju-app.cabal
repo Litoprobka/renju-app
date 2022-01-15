@@ -26,6 +26,7 @@ library
       Main
       Move
       MoveSeq
+      UndoRedoList
   other-modules:
       Paths_renju_app
   autogen-modules:
@@ -45,6 +46,7 @@ library
     , directory
     , flow
     , ilist
+    , microlens
     , microlens-th
     , monomer
     , rrb-vector
@@ -65,6 +67,7 @@ executable app
       LitoUtils
       Move
       MoveSeq
+      UndoRedoList
       Paths_renju_app
   autogen-modules:
       Paths_renju_app
@@ -83,6 +86,7 @@ executable app
     , directory
     , flow
     , ilist
+    , microlens
     , microlens-th
     , monomer
     , rrb-vector
@@ -118,6 +122,7 @@ test-suite spec
     , flow
     , hspec ==2.*
     , ilist
+    , microlens
     , microlens-th
     , monomer
     , renju-app

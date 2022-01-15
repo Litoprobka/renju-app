@@ -11,11 +11,14 @@ import MoveSeq (Stone(..))
 import qualified Move
 import Move (Move)
 import CLI (loadLib, saveLib, LibLoadError(..))
+import UndoRedoList (UndoRedoList)
+import qualified UndoRedoList as URList
+import Lens.Micro (SimpleGetter)
 
 import Monomer
 
 newtype AppModel = AppModel {
-  _lib :: Lib
+  _libStates :: UndoRedoList Lib
 } deriving (Eq, Show)
 
 data AppEvent
@@ -29,12 +32,18 @@ data AppEvent
   | RemovePos
   | BoardText Move Text
   | Comment Text
+  | Undo
+  | Redo
   deriving (Eq, Show)
 
 type AppWenv = WidgetEnv AppModel AppEvent
 type AppNode = WidgetNode AppModel AppEvent
 
 makeLenses 'AppModel
+
+-- | Gets current lib state
+lib :: SimpleGetter AppModel Lib
+lib = libStates . URList.current
 
 boardBox :: Lib -> Move -> AppNode
 boardBox l m =
@@ -96,7 +105,7 @@ buildUI
   -> AppModel
   -> AppNode
 buildUI _ model = widgetTree where
-  widgetTree = keystroke [("Left", MoveBack), ("C-r", Rotate), ("Delete", RemovePos), ("C-c", Comment <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)] <|
+  widgetTree = keystroke (defaultShortcuts model) <|
     vstack [
       {-hstack <| menuBarStyle [
         phButton "File",
@@ -129,8 +138,11 @@ handleEvent _ _ model evt = case evt of
   BoardText m t -> updateLibWith <| Lib.addBoardText m t -- placeholder
   Rotate -> updateLibWith Lib.rotate -- TODO: make it force a GUI redraw
   Comment t -> updateLibWith <| Lib.addComment t
+  Undo -> updateLibStates URList.undo
+  Redo -> updateLibStates URList.redo
   where
-    updateLibWith f = [ Model (model |> lib %~ f) ]
+    updateLibStates f = [ Model (model |> libStates %~ f ) ]
+    updateLibWith = updateLibStates <. URList.update
 
     throwError :: Either LibLoadError Lib -> IO Lib
     throwError (Left err) = error <| show err
@@ -149,4 +161,15 @@ main = do
       appWindowState <| MainWindowNormal (765, 765),
       appWindowResizable False
       ]
-    model = AppModel Lib.empty
+    model = AppModel <| URList.one Lib.empty
+
+defaultShortcuts :: AppModel -> [(Text, AppEvent)]
+defaultShortcuts model = [
+    ("Left", MoveBack)
+  , ("C-r", Rotate)
+  , ("Delete", RemovePos)
+  , ("C-c", Comment <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
+  , ("C-z", Undo)
+  , ("C-S-z", Redo)
+  , ("C-y", Redo)
+  ]
