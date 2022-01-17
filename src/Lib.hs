@@ -18,6 +18,7 @@ import Data.Default ( Default(..) )
 import Data.Aeson
 import qualified Data.Foldable as F (toList)
 import Data.Text (snoc)
+import Data.List.NonEmpty ((!!))
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -186,10 +187,10 @@ transform :: (Move -> Move) -> Lib -> Lib
 transform f = moves %~ MoveSeq.transform f
 
 mirror :: Lib -> Lib
-mirror = transform (\ p -> Move.fromIntPartial (14 - Move.getX p) (Move.getY p))
+mirror = transform <| Move.transformations !! 1
 
 rotate :: Lib -> Lib
-rotate = transform (\ p -> Move.fromIntPartial (Move.getY p) (14-Move.getX p))
+rotate = transform <| Move.transformations !! 6
 
 fromText :: Text -> Maybe Lib
 fromText =

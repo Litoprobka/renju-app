@@ -196,7 +196,9 @@ allPrev moves =
 -- | /O(n)/ Applies a given transformation (rotation or mirroring) to a MoveSeq
 transform :: (Move -> Move) -> MoveSeq -> MoveSeq
 transform f =
-    over moveList (map f)
+    view moveList
+    <.>> f
+    .> fromList
 
 toText :: (Move -> Maybe Stone -> Text) -> MoveSeq -> Text
 toText f ms =

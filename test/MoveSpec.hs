@@ -1,5 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
-module MoveSpec (spec) where
+module MoveSpec (ft, spec) where
 
 import DefaultImports
 import Test.Hspec
@@ -7,6 +7,7 @@ import Test.Hspec.QuickCheck
 import Move
 
 -- | Partial version of Move.fromText
+ft :: Text -> Move
 ft (Move.fromText -> Just m) = m
 ft _ = error "failed to parse Move"
 

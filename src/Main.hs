@@ -24,10 +24,11 @@ newtype AppModel = AppModel {
 data AppEvent
   = LoadDefaultLib
   | SaveDefaultLib
-  | Blank ()
+  | Blank
   | NewLib Lib
   | BoardClick Move
   | Rotate
+  | Mirror
   | MoveBack
   | RemovePos
   | BoardText Move Text
@@ -55,7 +56,7 @@ boardNode l m =
   ]
   where
   currentPos = view Lib.moves l
-  stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, fitHeight]
+  stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, alignMiddle, fitEither]
   stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
     Nothing -> if not <| Lib.exists (MoveSeq.makeMove' m currentPos) l then
         "blank"
@@ -118,15 +119,16 @@ handleEvent
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent _ _ model evt = case evt of
-  Blank () -> []
+  Blank -> []
   LoadDefaultLib -> one <| Task <| NewLib <$> (throwError =<< loadLib "lib-autosave")
-  SaveDefaultLib -> one <| Task <| Blank <$> saveLib "lib-autosave" (model ^. lib)
+  SaveDefaultLib -> one <| Task <| Blank <$ saveLib "lib-autosave" (model ^. lib)
   NewLib newLib -> updateLibWith (const newLib)
   BoardClick m -> updateLibWith <| Lib.addMove m
   MoveBack -> updateLibWith Lib.back
   RemovePos -> updateLibWith Lib.remove
-  BoardText m t -> updateLibWith <| Lib.addBoardText m t -- placeholder
-  Rotate -> updateLibWith Lib.rotate -- TODO: make it force a GUI redraw
+  BoardText m t -> updateLibWith <| Lib.addBoardText m t
+  Rotate -> updateLibWith Lib.rotate
+  Mirror -> updateLibWith Lib.mirror
   Comment t -> updateLibWith <| Lib.addComment t
   Undo -> updateLibStates URList.undo
   Redo -> updateLibStates URList.redo
@@ -157,6 +159,7 @@ defaultShortcuts :: AppModel -> [(Text, AppEvent)]
 defaultShortcuts model = [
     ("Left", MoveBack)
   , ("C-r", Rotate)
+  , ("C-m", Mirror)
   , ("Delete", RemovePos)
   , ("C-c", Comment <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
   , ("C-z", Undo)
