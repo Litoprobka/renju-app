@@ -58,10 +58,13 @@ boardNode l m =
   currentPos = view Lib.moves l
   stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, alignMiddle, fitEither]
   stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
-    Nothing -> if not <| Lib.exists (MoveSeq.makeMove' m currentPos) l then
-        "blank"
-      else
-        "move-exists-" <> if currentPos ^. MoveSeq.nextColor == Black then "black" else "white"
+    Nothing
+      | moveText /= "" 
+      || noNextMove -> "blank"
+      | otherwise -> "move-exists-" <> case currentPos ^. MoveSeq.nextColor of
+      Black -> "black"
+      White -> "white"
+
 
     Just Black -> "black-stone-gradient"
     Just White -> "white-stone-gradient"
@@ -74,12 +77,18 @@ boardNode l m =
     Lib.getBoardText m l
     |> fromMaybe (maybe "" show (MoveSeq.moveIndex m <| l ^. Lib.moves))
 
+  noNextMove = not <| Lib.exists (MoveSeq.makeMove' m currentPos) l
+
   color
-    | ( currentPos ^. MoveSeq.moveList |> safeHead) == Just m = green -- current move
+    | (currentPos ^. MoveSeq.moveList |> safeHead) == Just m = green -- current move
     | otherwise = case MoveSeq.moveIndex m currentPos of
       Just (even -> True) -> black
       Just _ -> white
-      Nothing -> green -- board text
+      Nothing -- board text
+        | noNextMove -> green
+        | otherwise -> case currentPos ^. MoveSeq.nextColor of
+          Black -> black
+          White -> white
 
   tooltip' = case flip Lib.getCommentOf l <$> MoveSeq.makeMove m currentPos of -- MoveSeq.makeMove is useful for once
     Nothing -> id
