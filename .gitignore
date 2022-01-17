@@ -11,3 +11,4 @@ dist-docs.*/
 *.ser
 cabal.project.local*
 lib-autosave
+lib-autosave-novec

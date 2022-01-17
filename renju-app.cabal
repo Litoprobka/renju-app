@@ -49,7 +49,6 @@ library
     , microlens
     , microlens-th
     , monomer
-    , rrb-vector
     , text
     , universum >=1.7.2 && <2
     , unordered-containers
@@ -89,7 +88,6 @@ executable app
     , microlens
     , microlens-th
     , monomer
-    , rrb-vector
     , text
     , universum >=1.7.2 && <2
     , unordered-containers
@@ -126,7 +124,6 @@ test-suite spec
     , microlens-th
     , monomer
     , renju-app
-    , rrb-vector
     , text
     , universum >=1.7.2 && <2
     , unordered-containers
