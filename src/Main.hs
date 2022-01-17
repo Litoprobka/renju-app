@@ -45,8 +45,8 @@ makeLenses 'AppModel
 lib :: SimpleGetter AppModel Lib
 lib = libStates . URList.current
 
-boardBox :: Lib -> Move -> AppNode
-boardBox l m =
+boardNode :: Lib -> Move -> AppNode
+boardNode l m =
   tooltip' <|
   box_ [onBtnPressed handleClick] <|
   zstack [
@@ -57,13 +57,13 @@ boardBox l m =
   currentPos = view Lib.moves l
   stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, fitHeight]
   stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
-    None -> if not <| Lib.exists (MoveSeq.makeMove' m currentPos) l then
+    Nothing -> if not <| Lib.exists (MoveSeq.makeMove' m currentPos) l then
         "blank"
       else
-        "move-exists-" <> if even <| MoveSeq.moveCount currentPos then "black" else "white"
+        "move-exists-" <> if currentPos ^. MoveSeq.nextColor == Black then "black" else "white"
 
-    Black -> "black-stone-gradient"
-    White -> "white-stone-gradient"
+    Just Black -> "black-stone-gradient"
+    Just White -> "white-stone-gradient"
 
   handleClick BtnLeft _ = BoardClick m
   handleClick BtnMiddle _ = BoardText m "board text"
@@ -74,7 +74,7 @@ boardBox l m =
     |> fromMaybe (maybe "" show (MoveSeq.moveIndex m <| l ^. Lib.moves))
 
   color
-    | (MoveSeq.getMoves currentPos |> safeHead) == Just m = green -- current move
+    | ( currentPos ^. MoveSeq.moveList |> safeHead) == Just m = green -- current move
     | otherwise = case MoveSeq.moveIndex m currentPos of
       Just (even -> True) -> black
       Just _ -> white
@@ -94,7 +94,7 @@ boardGrid l =
   <&> (\y ->
     [0..14]
     <&> (`Move.fromIntPartial` y)
-    <&> boardBox l
+    <&> boardNode l
   )
   |> reverse
   |> map hgrid
@@ -106,19 +106,9 @@ buildUI
   -> AppNode
 buildUI _ model = widgetTree where
   widgetTree = keystroke (defaultShortcuts model) <|
-    vstack [
-      {-hstack <| menuBarStyle [
-        phButton "File",
-        phButton "Edit",
-        phButton "View",
-        phButton "Move"
-      ],
-      separatorLine,
-      spacer,-}
-        zstack <| [
-          boardImage,
-          boardGrid (model ^. lib)
-        ]
+    zstack [
+      boardImage,
+      boardGrid (model ^. lib)
     ]
 
 handleEvent

@@ -54,11 +54,12 @@ instance FromJSON Lib where
 makeLenses 'Lib
 makeLenses 'MoveInfo
 
--- | Represents an empty database
+-- | /O(1)/ An empty database
 empty :: Lib
 empty =
     Lib (one (MoveSeq.empty, def) Vec.<| Vec.replicate 225 HashMap.empty) MoveSeq.empty
 
+-- | O(1) A wrapper around MoveSeq.back
 back :: Lib -> Lib
 back = over moves MoveSeq.back
 
@@ -80,7 +81,7 @@ addMove move l =
     where
         pos = MoveSeq.makeMove' move <| l^.moves
 
--- | checks if a given position exists in the Lib. If it does, switch to it
+-- | checks if a given position exists in the Lib. If it does, switches to it
 nextMove :: Move -> Lib -> Lib
 nextMove move l =
     l |> applyIf (exists newPos) (moves .~ newPos)
@@ -171,13 +172,13 @@ printLib l =
         pos = l^.moves
 
         --char move None = case MoveSeq.makeMove' move pos of
-        char ((`getBoardText` l) -> Just bt) None =
+        char ((`getBoardText` l) -> Just bt) Nothing =
             safeHead bt
             |> fromMaybe ' '
             |> snoc " "
-        char move None = if exists (MoveSeq.makeMove' move pos) l then " +" else " ."
-        char _ Black = " x"
-        char _ White = " o"
+        char move Nothing = if exists (MoveSeq.makeMove' move pos) l then " +" else " ."
+        char _ (Just Black) = " x"
+        char _ (Just White) = " o"
 
 -- some UI-related functions
 

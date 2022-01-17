@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Move (Move, fromInt, fromIntPartial, fromText, Move.toText, fromBytePartial, hashPart, transformations, getX, getY) where
+module Move (Move, fromInt, fromIntPartial, fromText, Move.toText, toByte, fromBytePartial, hashPart, transformations, getX, getY) where
 
 import DefaultImports
 

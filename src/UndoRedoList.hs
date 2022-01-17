@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, ViewPatterns #-}
+{-# LANGUAGE TemplateHaskell, ViewPatterns, RecordWildCards #-}
 
 module UndoRedoList where
 
@@ -17,19 +17,19 @@ one :: a -> UndoRedoList a
 one x = UndoRedoList [] x []
 
 undo :: UndoRedoList a -> UndoRedoList a
-undo l@(UndoRedoList pr cur nxt) = case pr of
+undo l@UndoRedoList{..} = case _prev of
     [] -> l
     prevHead : prevTail ->
-        UndoRedoList prevTail prevHead (cur : nxt)
+        UndoRedoList prevTail prevHead (_current : _next)
 
 redo :: UndoRedoList a -> UndoRedoList a
-redo l@(UndoRedoList pr cur nxt) = case nxt of
+redo l@UndoRedoList{..} = case _next of
   [] -> l
   nextHead : nextTail ->
-      UndoRedoList (cur : pr) nextHead nextTail
+      UndoRedoList (_current : _prev) nextHead nextTail
 
 update :: (a -> a) -> UndoRedoList a -> UndoRedoList a
-update f (UndoRedoList pr cur _) = UndoRedoList (cur : pr) (f cur) []
+update f UndoRedoList{..} = UndoRedoList (_current : _prev) (f _current) []
 
 add :: a -> UndoRedoList a -> UndoRedoList a
 add x = update (const x)
