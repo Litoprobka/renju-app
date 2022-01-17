@@ -14,7 +14,6 @@ import qualified MoveSeq
 import qualified Data.HashMap.Strict as HashMap
 import Data.Default ( Default(..) )
 import Data.Aeson
-import qualified Data.Foldable as F (toList)
 import Data.Text (snoc)
 import Data.List.NonEmpty ((!!))
 
@@ -43,7 +42,7 @@ data Lib = Lib {
 } deriving (Show, Eq)
 
 instance ToJSON Lib where
-    toJSON (Lib l _) = toJSON <| F.toList l -- RRB Vector does not play well with Universum
+    toJSON (Lib l _) = toJSON l
 
 instance FromJSON Lib where
     parseJSON obj = do
