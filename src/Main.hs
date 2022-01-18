@@ -129,8 +129,8 @@ handleEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent _ _ model evt = case evt of
   Blank -> []
-  LoadDefaultLib -> one <| Task <| NewLib <$> (throwError =<< loadLib "lib-autosave-novec")
-  SaveDefaultLib -> one <| Task <| Blank <$ saveLib "lib-autosave-novec" (model ^. lib)
+  LoadDefaultLib -> one <| Task <| NewLib <$> (throwError =<< loadLib "lib-autosave")
+  SaveDefaultLib -> one <| Task <| Blank <$ saveLib "lib-autosave" (model ^. lib)
   NewLib newLib -> updateLibWith (const newLib)
   BoardClick m -> updateLibWith <| Lib.addMove m
   MoveBack -> updateLibWith Lib.back

@@ -34,10 +34,9 @@ instance FromJSON MoveInfo where
             <$> obj .: "comment"
             <*> obj .: "board-text"
 
-type LibLayer = HashMap MoveSeq MoveInfo
 -- | Represents a database file
 data Lib = Lib {
-      _lib :: LibLayer
+      _lib :: HashMap MoveSeq MoveInfo
     , _moves :: MoveSeq
 } deriving (Show, Eq)
 
