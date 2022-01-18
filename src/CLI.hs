@@ -33,7 +33,7 @@ withArg =
     _ -> Nothing
 
 printLib' :: Lib -> IO Lib
-printLib' l = printLib l >> pure l
+printLib' l = putText (printLib l) >> pure l
 
 loadLib :: Text -> IO (Either LibLoadError Lib)
 loadLib filePath = do
@@ -54,7 +54,7 @@ saveLib filePath =
 
 repl :: Lib -> IO ()
 repl l = do
-    printLib l
+    _ <- printLib' l
     text <- getLine
     case text of
         "quit" -> pass

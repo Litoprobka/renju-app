@@ -19,14 +19,13 @@ extra-source-files:
 library
   exposed-modules:
       CLI
-      Debug
       DefaultImports
       Lib
-      LitoUtils
       Main
       Move
       MoveSeq
       UndoRedoList
+      Utils
   other-modules:
       Paths_renju_app
   autogen-modules:
@@ -60,13 +59,12 @@ executable app
   main-is: Main.hs
   other-modules:
       CLI
-      Debug
       DefaultImports
       Lib
-      LitoUtils
       Move
       MoveSeq
       UndoRedoList
+      Utils
       Paths_renju_app
   autogen-modules:
       Paths_renju_app

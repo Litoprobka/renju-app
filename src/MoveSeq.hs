@@ -2,8 +2,6 @@
 module MoveSeq where
 
 import DefaultImports
-import LitoUtils
-
 import Move(Move)
 import qualified Move
 import Data.List (elemIndex)
@@ -14,9 +12,18 @@ import Data.Text (snoc)
 import Lens.Micro (to, SimpleGetter)
 import qualified Data.List.NonEmpty as NonEmpty
 
--- A different implementation of Pos. Preserves move order, so it can be used in Lib; should be faster to hash as well.
-data MoveSeq = MoveSeq { _moveList :: [Move], _nextColor :: Stone, _hashes :: NonEmpty LongHash } deriving Show -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
-                                               -- this representation works only for Renju/Gomoku (i.e. not Pente), because it assumes every odd move is black and every even move is white
+-- | A /seq/uence of /move/s, representing a position on the board.
+--
+-- Comparison ignores move order and rotation / mirroring.
+--  
+-- This implementation works only for Renju/Gomoku (i.e. not Pente), because it assumes every odd move is black and every even move is white
+data MoveSeq = MoveSeq { 
+    _moveList :: [Move], -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
+    _nextColor :: Stone,
+    _hashes :: NonEmpty LongHash -- ^ LongHashes of all positions symmetrical to the current one. Minimum of these is *the* LongHash of a position.
+} deriving Show
+
+-- | A numeric representation of move list w/o move order, used to compare and hash MoveSeq's
 newtype LongHash = LongHash Integer deriving (Show, Eq, Ord, Num, Hashable)
 
 data Stone
@@ -27,6 +34,8 @@ data Stone
 makeLenses 'MoveSeq
 hash :: SimpleGetter MoveSeq LongHash
 hash = to <| minimum <. view hashes
+
+-- * Instances
 instance Eq MoveSeq where
     (==) = (==) `on` view hash
 
@@ -51,16 +60,7 @@ instance FromJSONKey MoveSeq where
         parser (fromGetpos -> Just ms) = pure ms
         parser k = fail <| "cannot parse key " <> show k <> " into MoveSeq"
 
--- | /O(1)/ A MoveSeq with no moves.
-empty :: MoveSeq
-empty = MoveSeq [] Black (z :| replicate 7 z) where
-    z = LongHash 0
-
--- | /O(1)/ Checks if a MoveSeq is empty
-isEmpty :: MoveSeq -> Bool
-isEmpty MoveSeq{_moveList = []} = True
-isEmpty _ = False
-
+-- * Utility functions for Stone
 flipStone :: Stone -> Stone
 flipStone Black = White
 flipStone White = Black
@@ -69,70 +69,42 @@ hashMult :: Num a => Stone -> a
 hashMult Black = 1
 hashMult White = 2
 
-flipNextColor :: MoveSeq -> MoveSeq
-flipNextColor = over nextColor flipStone
+-- * Construction
 
-updateHashes :: (LongHash -> LongHash -> LongHash) -> (Stone -> Integer) -> Move -> MoveSeq -> MoveSeq
-updateHashes f mult move ms = ms
-    |> over hashes (NonEmpty.zipWith zf Move.transformations)
-    where
-    zf trns = flip f (fromIntegral <| (* mult (ms ^. nextColor)) <| Move.hashPart <| trns move)
+-- | /O(1)./ A MoveSeq with no moves.
+empty :: MoveSeq
+empty = MoveSeq [] Black (z :| replicate 7 z) where
+    z = LongHash 0
 
--- | /O(1)/ Returns the positon without the last move, or the same position if it was empty
+-- | /O(1)./ Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
+makeMove :: Move -> MoveSeq -> Maybe MoveSeq
+makeMove move pos
+    | move `notIn` pos = pos
+        |> over moveList (move :)
+        |> updateHashes (+) hashMult move
+        |> Just
+    | otherwise = Nothing
+
+-- | /O(1)./ Like 'makeMove', but returns the same position if the coordinates are taken
+makeMove' :: Move -> MoveSeq -> MoveSeq
+makeMove' move =
+    tryApply (makeMove move)
+
+-- | /O(1)./ Returns the positon without the last move, or the same position if it was empty
 back :: MoveSeq -> MoveSeq
 back ms = case view moveList ms of
     [] -> ms
     m : moves -> ms
         |> set moveList moves
         |> updateHashes (-) (flipStone .> hashMult) m
-        |> flipNextColor
 
--- | /O(n)/
-moveCount :: MoveSeq -> Int
-moveCount =
-    view moveList
-    .> length
+-- ** From other types
 
--- | /O(n)/ Returns the index of a move in a position, counting from one; Nothing if the does not exist in the position
-moveIndex :: Move -> MoveSeq -> Maybe Int
-moveIndex move =
-    view moveList
-    .> reverse
-    .> elemIndex move
-    <.>> (+1)
-
--- | /O(n)/ Returns the stone color of a move in a position, or Nothing if it does not contain the move
-stoneAt :: Move -> MoveSeq -> Maybe Stone
-stoneAt move =
-    moveIndex move
-    <.>> \case
-        (odd -> True) -> Black
-        _ -> White
-
--- | /O(n)/ Checks if a move does not in a position
-notIn :: Move -> MoveSeq -> Bool
-notIn move = stoneAt move .> isNothing
-
--- | /O(1)/ Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
-makeMove :: Move -> MoveSeq -> Maybe MoveSeq
-makeMove move pos
-    | move `notIn` pos = pos
-        |> over moveList (move :)
-        |> updateHashes (+) hashMult move
-        |> flipNextColor
-        |> Just
-    | otherwise = Nothing
-
--- | /O(1)/ Like 'makeMove', but returns the same position if the coordinates are taken
-makeMove' :: Move -> MoveSeq -> MoveSeq
-makeMove' move =
-    tryApply (makeMove move)
-
--- | /O(n)/ Constructs a MoveSeq from a list of moves
+-- | /O(n)./ Construct a MoveSeq from a list of moves
 fromList :: [Move] -> MoveSeq
 fromList = foldr' makeMove' MoveSeq.empty
 
--- | /O(n)/ Constructs a MoveSeq from a string in getpos format ("h8i9j6i8k8")
+-- | /O(n)./ Construct a MoveSeq from a string in getpos format ("h8i9j6i8k8")
 fromGetpos :: Text -> Maybe MoveSeq
 fromGetpos =
     (`snoc` 'a') .> foldl' f ("", [])
@@ -148,7 +120,44 @@ fromGetpos =
 
     isCoordLetter c = c >= 'a' && c <= 'o'
 
--- | /O(n)/ Convert a position to getpos format
+-- * Destruction
+
+-- ** Queries
+
+-- | /O(1)./ Checks if a MoveSeq is empty
+isEmpty :: MoveSeq -> Bool
+isEmpty MoveSeq{_moveList = []} = True
+isEmpty _ = False
+
+-- | /O(n)./ The number of moves in a position
+moveCount :: MoveSeq -> Int
+moveCount =
+    view moveList
+    .> length
+
+-- | /O(n)./ Returns the index of a move in a position, counting from one; Nothing if the does not exist in the position
+moveIndex :: Move -> MoveSeq -> Maybe Int
+moveIndex move =
+    view moveList
+    .> reverse
+    .> elemIndex move
+    <.>> (+1)
+
+-- | /O(n)./ Returns the stone color of a move in a position, or Nothing if it does not contain the move
+stoneAt :: Move -> MoveSeq -> Maybe Stone
+stoneAt move =
+    moveIndex move
+    <.>> \case
+        (odd -> True) -> Black
+        _ -> White
+
+-- | /O(n)./ Checks if a move does not in a position
+notIn :: Move -> MoveSeq -> Bool
+notIn move = stoneAt move .> isNothing
+
+-- ** Conversions
+
+-- | /O(n)./ Convert a position to getpos format
 toGetpos :: MoveSeq -> Text
 toGetpos =
     view moveList
@@ -156,7 +165,39 @@ toGetpos =
     .> reverse
     .> fold
 
--- | /~O(n^2)/ Apply a function to each Move that is not present in a given position.
+-- | /~O(n^2)./ Pretty-print a MoveSeq
+--
+-- Like with mapEmpty, complexity is actually linear (225n)
+toText ::
+    (Move -> Maybe Stone -> Char) -- ^ Function that returns what character to print for a given move
+    -> MoveSeq -- ^ The position to pretty-print
+    -> Text -- ^ Pretty-printed position
+toText f ms =
+    [0..14]
+    <&> (\y -> (`Move.fromIntPartial` y) <$> [0..14])
+    <&> map (snoc " " <. (f <*> flip MoveSeq.stoneAt ms)) -- S-combinator, OwO (this is similar to \ m -> f m (MoveSeq.stoneAt m ms))
+    |> imap (\i -> foldl' (<>) <| align <| i + 1)
+    |> (letters :)
+    |> reverse
+    |> unlines
+    where
+        align i
+            | i > 9 = show i
+            | otherwise = " " <> show i
+
+        letters = "   a b c d e f g h i j k l m n o" 
+
+-- * Other
+
+-- | A helper function to update the hashes when changing a MoveSeq
+updateHashes :: (LongHash -> LongHash -> LongHash) -> (Stone -> Integer) -> Move -> MoveSeq -> MoveSeq
+updateHashes f mult move ms = ms
+    |> over hashes (NonEmpty.zipWith zf Move.transformations)
+    |> over nextColor flipStone
+    where
+    zf trns = flip f (fromIntegral <| (* mult (ms ^. nextColor)) <| Move.hashPart <| trns move)
+
+-- | /~O(n^2)./ Apply a function to each Move that is not present in a given position.
 -- 
 -- Technically, complexity is linear (225n), but in practice it is worse than /O(n^2)/, because n <= 225
 mapEmpty :: (Move -> a) -> MoveSeq -> [a]
@@ -166,11 +207,11 @@ mapEmpty f moves =
      &  filter (`notIn` moves)
     <&> f
 
--- | /~O(n^2)/ Apply a function to all positions that can be derived from the current one
+-- | /~O(n^2)./ Apply a function to all positions that can be derived from the current one
 mapNext :: (MoveSeq -> a) -> MoveSeq -> [a]
 mapNext f moves = mapEmpty (f <. (`MoveSeq.makeMove'` moves)) moves
 
--- | /O(n^2)/ Returns all parent positions (current one minus one move)
+-- | /O(n^2)./ Return all parent positions (current one minus one move)
 allPrev :: MoveSeq -> [MoveSeq]
 allPrev MoveSeq{ _moveList = [] } = []
 allPrev moves =
@@ -193,25 +234,9 @@ allPrev moves =
         go [] _ = error "length mismatch"
         go (x:xs) ys = x : go ys xs
 
--- | /O(n)/ Applies a given transformation (rotation or mirroring) to a MoveSeq
+-- | /O(n)./ Apply given transformation (rotation or mirroring) to a MoveSeq
 transform :: (Move -> Move) -> MoveSeq -> MoveSeq
 transform f =
     view moveList
     <.>> f
     .> fromList
-
-toText :: (Move -> Maybe Stone -> Text) -> MoveSeq -> Text
-toText f ms =
-    [0..14]
-    <&> (\y -> (`Move.fromIntPartial` y) <$> [0..14])
-    <&> map (f <*> flip MoveSeq.stoneAt ms) -- S-combinator, OwO (this is similar to \ m -> f m (MoveSeq.stoneAt m ms))
-    |> imap (\i -> foldl' (<>) <| align <| i + 1)
-    |> (letters :)
-    |> reverse
-    |> unlines
-    where
-        align i
-            | i > 9 = show i
-            | otherwise = " " <> show i
-
-        letters = "   a b c d e f g h i j k l m n o" 
