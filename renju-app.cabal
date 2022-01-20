@@ -37,7 +37,7 @@ library
       NoImplicitPrelude
   ghc-options: -W
   build-depends:
-      Clipboard
+      Hclip
     , aeson
     , aeson-pretty
     , base >=4.8 && <5
@@ -76,7 +76,7 @@ executable app
       NoImplicitPrelude
   ghc-options: -W -threaded
   build-depends:
-      Clipboard
+      Hclip
     , aeson
     , aeson-pretty
     , base >=4.8 && <5
@@ -111,7 +111,7 @@ test-suite spec
       OverloadedStrings
       NoImplicitPrelude
   build-depends:
-      Clipboard
+      Hclip
     , aeson
     , aeson-pretty
     , base >=4.8 && <5

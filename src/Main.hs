@@ -14,7 +14,7 @@ import CLI (loadLib, saveLib, LibLoadError(..))
 import UndoRedoList (UndoRedoList)
 import qualified UndoRedoList as URList
 import Lens.Micro (SimpleGetter)
-import System.Clipboard
+import System.Hclip
 
 import Monomer
 
@@ -142,11 +142,11 @@ handleEvent _ _ model evt = case evt of
   Rotate -> updateLibWith Lib.rotate
   Mirror -> updateLibWith Lib.mirror
   Comment t -> updateLibWith <| Lib.addComment t
-  Getpos -> one <| Task <| Blank <$ setClipboardString (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
+  Getpos -> one <| Task <| Blank <$ setClipboard (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
 
   Paste -> one <| Task <| Putpos <$> 
-    (getClipboardString
-    <&> (=<<) (fromString .> MoveSeq.fromGetpos) -- this is anything but readable
+    (getClipboard
+    <&> fromString .> MoveSeq.fromGetpos -- this is anything but readable
     >>= putposErr)
 
   Putpos ms -> updateLibWith <| Lib.addPosRec ms
