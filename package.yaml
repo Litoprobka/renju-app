@@ -23,6 +23,7 @@ dependencies:
   - aeson
   - aeson-pretty
   - bytestring
+  - Clipboard
   - data-default
   - directory
   - flow

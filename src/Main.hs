@@ -7,13 +7,14 @@ import DefaultImports
 import qualified Lib
 import Lib (Lib)
 import qualified MoveSeq
-import MoveSeq (Stone(..))
+import MoveSeq (Stone(..), MoveSeq)
 import qualified Move
 import Move (Move)
 import CLI (loadLib, saveLib, LibLoadError(..))
 import UndoRedoList (UndoRedoList)
 import qualified UndoRedoList as URList
 import Lens.Micro (SimpleGetter)
+import System.Clipboard
 
 import Monomer
 
@@ -26,13 +27,15 @@ data AppEvent
   | SaveDefaultLib
   | Blank
   | NewLib Lib
-  | BoardClick Move
+  | BoardClick Move Button Int
   | Rotate
   | Mirror
-  | MoveBack
   | RemovePos
   | BoardText Move Text
   | Comment Text
+  | Getpos
+  | Paste
+  | Putpos MoveSeq
   | Undo
   | Redo
   deriving (Eq, Show)
@@ -49,7 +52,7 @@ lib = libStates . URList.current
 boardNode :: Lib -> Move -> AppNode
 boardNode l m =
   tooltip' <|
-  box_ [onBtnPressed handleClick] <|
+  box_ [onBtnPressed <| BoardClick m] <|
   zstack [
     stoneImage,
     label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor color]
@@ -68,10 +71,6 @@ boardNode l m =
 
     Just Black -> "black-stone-gradient"
     Just White -> "white-stone-gradient"
-
-  handleClick BtnLeft _ = BoardClick m
-  handleClick BtnMiddle _ = BoardText m "board text"
-  handleClick BtnRight _ = MoveBack
 
   moveText =
     Lib.getBoardText m l
@@ -130,15 +129,27 @@ handleEvent
 handleEvent _ _ model evt = case evt of
   Blank -> []
   LoadDefaultLib -> one <| Task <| NewLib <$> (throwError =<< loadLib "lib-autosave")
-  SaveDefaultLib -> one <| Task <| Blank <$ saveLib "lib-autosave" (model ^. lib)
+  
+  SaveDefaultLib -> one <| Task <| Blank <$
+    when (not <| Lib.isEmpty (model ^. lib)) (saveLib "lib-autosave" (model ^. lib))
+
   NewLib newLib -> updateLibWith (const newLib)
-  BoardClick m -> updateLibWith <| Lib.addMove m
-  MoveBack -> updateLibWith Lib.back
+  
+  BoardClick m btn _ -> updateLibWith <| handleClick m btn
   RemovePos -> updateLibWith Lib.remove
+
   BoardText m t -> updateLibWith <| Lib.addBoardText m t
   Rotate -> updateLibWith Lib.rotate
   Mirror -> updateLibWith Lib.mirror
   Comment t -> updateLibWith <| Lib.addComment t
+  Getpos -> one <| Task <| Blank <$ setClipboardString (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
+
+  Paste -> one <| Task <| Putpos <$> 
+    (getClipboardString
+    <&> (=<<) (fromString .> MoveSeq.fromGetpos) -- this is anything but readable
+    >>= putposErr)
+
+  Putpos ms -> updateLibWith <| Lib.addPosRec ms
   Undo -> updateLibStates URList.undo
   Redo -> updateLibStates URList.redo
   where
@@ -147,7 +158,14 @@ handleEvent _ _ model evt = case evt of
 
     throwError :: Either LibLoadError Lib -> IO Lib
     throwError (Left err) = error <| show err
-    throwError (Right newLib) = return newLib
+    throwError (Right newLib) = pure newLib
+
+    putposErr :: Maybe MoveSeq -> IO MoveSeq
+    putposErr = maybe (error "Failed to parse MoveSeq") pure
+
+    handleClick m BtnLeft = Lib.addMove m
+    handleClick m BtnMiddle = Lib.addBoardText m "board text"
+    handleClick _ BtnRight = Lib.back
 
 main :: IO ()
 main = do
@@ -166,12 +184,13 @@ main = do
 
 defaultShortcuts :: AppModel -> [(Text, AppEvent)]
 defaultShortcuts model = [
-    ("Left", MoveBack)
-  , ("C-r", Rotate)
+    ("C-r", Rotate)
   , ("C-m", Mirror)
   , ("Delete", RemovePos)
-  , ("C-c", Comment <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
+  , ("C-t", Comment <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
   , ("C-z", Undo)
   , ("C-S-z", Redo)
   , ("C-y", Redo)
+  , ("C-c", Getpos)
+  , ("C-v", Paste)
   ]

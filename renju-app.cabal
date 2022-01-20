@@ -37,7 +37,8 @@ library
       NoImplicitPrelude
   ghc-options: -W
   build-depends:
-      aeson
+      Clipboard
+    , aeson
     , aeson-pretty
     , base >=4.8 && <5
     , bytestring
@@ -75,7 +76,8 @@ executable app
       NoImplicitPrelude
   ghc-options: -W -threaded
   build-depends:
-      aeson
+      Clipboard
+    , aeson
     , aeson-pretty
     , base >=4.8 && <5
     , bytestring
@@ -109,7 +111,8 @@ test-suite spec
       OverloadedStrings
       NoImplicitPrelude
   build-depends:
-      aeson
+      Clipboard
+    , aeson
     , aeson-pretty
     , base >=4.8 && <5
     , bytestring

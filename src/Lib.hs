@@ -71,6 +71,11 @@ addPosDef m = applyIf (not <. exists m) (addPos def m)
 addPos :: MoveInfo -> MoveSeq -> Lib -> Lib
 addPos mi ms = over lib (HashMap.insert ms mi)
 
+-- | /O(log(n) * m)./ Add a positition to the lib move by move
+addPosRec :: MoveSeq -> Lib -> Lib
+addPosRec ms l =
+    foldr' addMove (set moves MoveSeq.empty l) (ms ^. MoveSeq.moveList)
+
 -- | /O(log n)./ Add a move to the lib
 addMove :: Move -> Lib -> Lib
 addMove move l =
@@ -122,6 +127,9 @@ addBoardText m t l = updatePos (over boardText upd) pos l where
     pos = l^.moves
 
 -- * Queries
+
+isEmpty :: Lib -> Bool
+isEmpty = (==Lib.empty) 
 
 -- | /O(log n)./ Check if a given position exists in the lib
 exists :: MoveSeq -> Lib -> Bool -- not sure about the argument order, maybe Move and Pos should be the other way around
