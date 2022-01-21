@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -18,8 +19,9 @@ import System.Hclip
 
 import Monomer
 
-newtype AppModel = AppModel {
-  _libStates :: UndoRedoList Lib
+data AppModel = AppModel {
+  _libStates :: UndoRedoList Lib,
+  _editing :: EditType
 } deriving (Eq, Show)
 
 data AppEvent
@@ -32,6 +34,8 @@ data AppEvent
   | Mirror
   | RemovePos
   | BoardText Move Text
+  | StartEditing Move
+  | StopEditing
   | Comment Text
   | Getpos
   | Paste
@@ -40,10 +44,27 @@ data AppEvent
   | Redo
   deriving (Eq, Show)
 
+data EditType
+  = ENone
+  | EBoardText Move
+  deriving (Eq, Show)
+
 type AppWenv = WidgetEnv AppModel AppEvent
 type AppNode = WidgetNode AppModel AppEvent
 
 makeLenses 'AppModel
+
+data BTEvent
+  = Save
+  | Cancel
+  deriving (Show, Eq)
+
+data BTModel = BTModel {
+  _move :: Move,
+  _boardText :: Text
+} deriving (Show, Eq)
+
+makeLenses 'BTModel
 
 -- | Gets current lib state
 lib :: SimpleGetter AppModel Lib
@@ -115,10 +136,14 @@ buildUI
   -> AppNode
 buildUI _ model = widgetTree where
   widgetTree = keystroke (defaultShortcuts model) <|
-    zstack [
+    zstack <| boardTextEditor' <| [
       boardImage,
       boardGrid (model ^. lib)
     ]
+
+  boardTextEditor' l = case model ^. editing of
+    EBoardText m -> l ++ [ box_ [alignMiddle, alignCenter] <| boardTextEditor m (model ^. lib |> Lib.getBoardText m |> fromMaybe "") ]
+    _ -> l
 
 handleEvent
   :: AppWenv
@@ -133,28 +158,33 @@ handleEvent _ _ model evt = case evt of
   SaveDefaultLib -> one <| Task <| Blank <$
     when (not <| Lib.isEmpty (model ^. lib)) (saveLib "lib-autosave" (model ^. lib))
 
-  NewLib newLib -> updateLibWith (const newLib)
+  NewLib newLib -> updateLib (const newLib)
   
-  BoardClick m btn _ -> updateLibWith <| handleClick m btn
-  RemovePos -> updateLibWith Lib.remove
+  BoardClick m btn _ -> handleClick m btn
+  RemovePos -> updateLib Lib.remove
 
-  BoardText m t -> updateLibWith <| Lib.addBoardText m t
-  Rotate -> updateLibWith Lib.rotate
-  Mirror -> updateLibWith Lib.mirror
-  Comment t -> updateLibWith <| Lib.addComment t
+  BoardText m t -> updateLib <| Lib.addBoardText m t
+
+  StartEditing m -> updateModel editing (const <| EBoardText m)
+  StopEditing -> updateModel editing (const <| ENone)
+
+  Rotate -> updateLib Lib.rotate
+  Mirror -> updateLib Lib.mirror
+  Comment t -> updateLib <| Lib.addComment t
   Getpos -> one <| Task <| Blank <$ setClipboard (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
 
   Paste -> one <| Task <| Putpos <$> 
     (getClipboard
-    <&> fromString .> MoveSeq.fromGetpos -- this is anything but readable
+    <&> fromString .> MoveSeq.fromGetpos
     >>= putposErr)
 
-  Putpos ms -> updateLibWith <| Lib.addPosRec ms
+  Putpos ms -> updateLib <| Lib.addPosRec ms
   Undo -> updateLibStates URList.undo
   Redo -> updateLibStates URList.redo
   where
-    updateLibStates f = [ Model (model |> libStates %~ f ) ]
-    updateLibWith = updateLibStates <. URList.update
+    updateModel lens f = [ Model (model |> lens %~ f) ]
+    updateLibStates = updateModel libStates
+    updateLib = updateLibStates <. URList.update
 
     throwError :: Either LibLoadError Lib -> IO Lib
     throwError (Left err) = error <| show err
@@ -163,9 +193,9 @@ handleEvent _ _ model evt = case evt of
     putposErr :: Maybe MoveSeq -> IO MoveSeq
     putposErr = maybe (error "Failed to parse MoveSeq") pure
 
-    handleClick m BtnLeft = Lib.addMove m
-    handleClick m BtnMiddle = Lib.addBoardText m "board text"
-    handleClick _ BtnRight = Lib.back
+    handleClick m BtnLeft = updateLib <| Lib.addMove m
+    handleClick m BtnMiddle = one <| Event <| StartEditing m --one <| Event <| BoardText m "board text"
+    handleClick _ BtnRight = updateLib <| Lib.back
 
 main :: IO ()
 main = do
@@ -180,7 +210,7 @@ main = do
       appWindowState <| MainWindowNormal (765, 765),
       appWindowResizable False
       ]
-    model = AppModel <| URList.one Lib.empty
+    model = AppModel (URList.one Lib.empty) ENone
 
 defaultShortcuts :: AppModel -> [(Text, AppEvent)]
 defaultShortcuts model = [
@@ -194,3 +224,30 @@ defaultShortcuts model = [
   , ("C-c", Getpos)
   , ("C-v", Paste)
   ]
+
+boardTextEditor :: Move -> Text -> AppNode
+boardTextEditor m bt = compositeV "boardTextEditor" initModel (const Blank) buildUI' handleEvent' where
+  initModel = BTModel m bt
+
+  buildUI' _ _ = themeSwitch_ darkTheme [themeClearBg] <| widgets `styleBasic` [maxHeight 120, maxWidth 150, padding 10]
+  widgets =
+      keystroke [("Enter", Save)] <| 
+      vstack [
+        label "Enter board text" `styleBasic` [textCenter, textMiddle],
+        spacer,
+        textField boardText,
+        spacer,
+        hstack [
+          button "Cancel" Cancel,
+          filler,
+          button "Save" Save
+        ]
+      ]
+
+  handleEvent' :: EventHandler BTModel BTEvent AppModel AppEvent
+  handleEvent' _ _ BTModel{..} evt = case evt of
+    Save -> [
+      Report StopEditing,
+      Report <| BoardText _move _boardText
+      ]
+    Cancel -> one <| Report StopEditing
