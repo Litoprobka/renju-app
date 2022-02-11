@@ -3,11 +3,6 @@ optimization: 2
 packages:
     ./
 
-source-repository-package
-        type: git
-        location: https://github.com/fjvallarino/monomer.git
-        tag: 4e0f8fadab633718ecdcfa7322e66e9ec58a7ee6
-
 package nanovg
     flags: +stb_truetype
 
