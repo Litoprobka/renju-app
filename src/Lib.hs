@@ -74,7 +74,7 @@ addPos mi ms = over lib (HashMap.insert ms mi)
 -- | /O(log(n) * m)./ Add a positition to the lib move by move
 addPosRec :: MoveSeq -> Lib -> Lib
 addPosRec ms l =
-    foldr' addMove (set moves MoveSeq.empty l) (ms ^. MoveSeq.moveList)
+    foldr addMove (set moves MoveSeq.empty l) (ms ^. MoveSeq.moveList)
 
 -- | /O(log n)./ Add a move to the lib
 addMove :: Move -> Lib -> Lib
@@ -152,7 +152,7 @@ getComment = currentPos .> view comment
 getCommentOf :: MoveSeq -> Lib -> Text
 getCommentOf =
     getPos
-    ..> map (view comment)
+    ..> fmap (view comment)
     ..> fromMaybe ""
 
 -- | /O(log n * log m)./ Get current pos's board text for a given point on the board
@@ -179,7 +179,7 @@ printLib l =
 
         --char move None = case MoveSeq.makeMove' move pos of
         char ((`getBoardText` l) -> Just bt) Nothing =
-            safeHead bt
+            (toString .> safeHead) bt
             |> fromMaybe ' '
         char move Nothing = if exists (MoveSeq.makeMove' move pos) l then '+' else '.'
         char _ (Just Black) = 'x'

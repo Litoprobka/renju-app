@@ -28,11 +28,10 @@ dependencies:
   - flow
   - Hclip
   - ilist
-  - microlens
-  - microlens-th
   - monomer
+  - lens
+  - relude
   - text
-  - universum >= 1.7.2 && < 2
   - unordered-containers
 
 executables:

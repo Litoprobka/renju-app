@@ -14,7 +14,6 @@ import Move (Move)
 import CLI (loadLib, saveLib, LibLoadError(..))
 import UndoRedoList (UndoRedoList)
 import qualified UndoRedoList as URList
-import Lens.Micro (SimpleGetter)
 import System.Hclip
 
 import Monomer
@@ -67,7 +66,7 @@ data BTModel = BTModel {
 makeLenses 'BTModel
 
 -- | Gets current lib state
-lib :: SimpleGetter AppModel Lib
+lib :: Getting r AppModel Lib
 lib = libStates . URList.current
 
 boardNode :: Lib -> Move -> AppNode

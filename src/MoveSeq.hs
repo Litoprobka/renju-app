@@ -4,12 +4,11 @@ module MoveSeq where
 import DefaultImports
 import Move(Move)
 import qualified Move
-import Data.List (elemIndex)
-import Data.List.Index (imap, ipartition, deleteAt)
+import Data.List (elemIndex, minimum)
+import Data.List.Index (ipartition, deleteAt)
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
 import Data.Text (snoc)
-import Lens.Micro (to, SimpleGetter)
 import qualified Data.List.NonEmpty as NonEmpty
 
 -- | A /seq/uence of /move/s, representing a position on the board.
@@ -32,7 +31,7 @@ data Stone
     deriving (Show, Eq, Ord, Enum)
 
 makeLenses 'MoveSeq
-hash :: SimpleGetter MoveSeq LongHash
+hash :: Getting r MoveSeq LongHash
 hash = to <| minimum <. view hashes
 
 -- * Instances
@@ -102,12 +101,14 @@ back ms = case view moveList ms of
 
 -- | /O(n)./ Construct a MoveSeq from a list of moves
 fromList :: [Move] -> MoveSeq
-fromList = foldr' makeMove' MoveSeq.empty
+fromList = foldr makeMove' MoveSeq.empty
 
 -- | /O(n)./ Construct a MoveSeq from a string in getpos format ("h8i9j6i8k8")
 fromGetpos :: Text -> Maybe MoveSeq
 fromGetpos =
-    (`snoc` 'a') .> foldl' f ("", [])
+    (`snoc` 'a')
+    .> toString
+    .> foldl' f ("", [])
     .> snd
     .> sequence
     <.>> fromList

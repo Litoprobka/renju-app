@@ -46,11 +46,10 @@ library
     , directory
     , flow
     , ilist
-    , microlens
-    , microlens-th
+    , lens
     , monomer
+    , relude
     , text
-    , universum >=1.7.2 && <2
     , unordered-containers
   mixins:
       base hiding (System.IO.Unsafe)
@@ -85,11 +84,10 @@ executable app
     , directory
     , flow
     , ilist
-    , microlens
-    , microlens-th
+    , lens
     , monomer
+    , relude
     , text
-    , universum >=1.7.2 && <2
     , unordered-containers
   mixins:
       base hiding (System.IO.Unsafe)
@@ -121,12 +119,11 @@ test-suite spec
     , flow
     , hspec ==2.*
     , ilist
-    , microlens
-    , microlens-th
+    , lens
     , monomer
+    , relude
     , renju-app
     , text
-    , universum >=1.7.2 && <2
     , unordered-containers
   mixins:
       base hiding (System.IO.Unsafe)

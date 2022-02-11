@@ -1,1042 +1,3298 @@
-# This is a custom hlint config with rules that suggest
-# using Universum functions whenever it has a suitable
-# alternative. You may either copy-paste this config into
-# your .hlint.yaml or run hlint twice: once with your
-# default config, and the second time with this one.
-# This config is *not* intended for Universum developers.
-
-############################################################################
-## Universum
-############################################################################
-
-# There's no 'head' in Universum
-- ignore: {name: "Use head"}
-
-# We have 'whenJust' for this
-- ignore: {name: "Use Foldable.forM_"}
-
-- warn: {lhs: Data.Text.pack, rhs: Universum.toText}
-- warn: {lhs: Data.Text.unpack, rhs: Universum.toString}
-
-- warn: {lhs: Data.Text.Lazy.pack, rhs: Universum.toLText}
-- warn: {lhs: Data.Text.Lazy.unpack, rhs: Universum.toString}
-- warn: {lhs: Data.Text.Lazy.toStrict, rhs: Universum.toText}
-- warn: {lhs: Data.Text.Lazy.fromStrict, rhs: Universum.toLText}
-
-- warn: {lhs: Data.Text.pack (show x), rhs: Universum.show x}
-- warn: {lhs: Data.Text.Lazy.pack (show x), rhs: Universum.show x}
-
-- warn: {lhs: Control.Exception.evaluate, rhs: evaluateWHNF}
-- warn: {lhs: Control.Exception.evaluate (force x), rhs: evaluateNF x}
-- warn: {lhs: Control.Exception.evaluate (x `deepseq` ()), rhs: evaluateNF_ x}
-- warn: {lhs: void (evaluateWHNF x), rhs: evaluateWHNF_ x}
-- warn: {lhs: void (evaluateNF x), rhs: evaluateNF_ x}
-
-## Containers
-- hint: {lhs: Data.HashMap.Lazy.keys, rhs: Universum.keys}
-- hint: {lhs: Data.HashMap.Strict.keys, rhs: Universum.keys}
-- hint: {lhs: Data.Map.Lazy.keys, rhs: Universum.keys}
-- hint: {lhs: Data.Map.Strict.keys, rhs: Universum.keys}
-- hint: {lhs: Data.IntMap.Lazy.keys, rhs: Universum.keys}
-- hint: {lhs: Data.IntMap.Strict.keys, rhs: Universum.keys}
-
-- hint: {lhs: Data.HashMap.Lazy.elems, rhs: Universum.elems}
-- hint: {lhs: Data.HashMap.Strict.elems, rhs: Universum.elems}
-- hint: {lhs: Data.Map.Lazy.elems, rhs: Universum.elems}
-- hint: {lhs: Data.Map.Strict.elems, rhs: Universum.elems}
-- hint: {lhs: Data.IntMap.Lazy.elems, rhs: Universum.elems}
-- hint: {lhs: Data.IntMap.Strict.elems, rhs: Universum.elems}
-
-- hint: {lhs: Data.HashMap.Lazy.toList, rhs: Universum.toPairs}
-- hint: {lhs: Data.HashMap.Strict.toList, rhs: Universum.toPairs}
-- hint: {lhs: Data.Map.Lazy.toList, rhs: Universum.toPairs}
-- hint: {lhs: Data.Map.Lazy.assocs, rhs: Universum.toPairs}
-- hint: {lhs: Data.Map.Strict.toList, rhs: Universum.toPairs}
-- hint: {lhs: Data.Map.Strict.assocs, rhs: Universum.toPairs}
-- hint: {lhs: Data.IntMap.Lazy.toList, rhs: Universum.toPairs}
-- hint: {lhs: Data.IntMap.Lazy.assocs, rhs: Universum.toPairs}
-- hint: {lhs: Data.IntMap.Strict.toList, rhs: Universum.toPairs}
-- hint: {lhs: Data.IntMap.Strict.assocs, rhs: Universum.toPairs}
-
-- warn: { lhs: Data.Map.toAscList (Data.Map.fromList x)
-        , rhs: Universum.sortWith fst x
-        }
-- warn: { lhs: Data.Map.toDescList (Data.Map.fromList x)
-        , rhs: Universum.sortWith (Down . fst) x
-        }
-
-- warn: {lhs: Data.Set.toList (Data.Set.fromList l), rhs: Universum.sortNub l}
-- warn: {lhs: Data.Set.assocs (Data.Set.fromList l), rhs: Universum.sortNub l}
-- warn: {lhs: Data.Set.toAscList (Data.Set.fromList l), rhs: Universum.sortNub l}
-
-- warn: {lhs: Data.HashSet.toList (Data.HashSet.fromList l), rhs: Universum.unstableNub}
-
-- hint: { lhs: nub, rhs: Universum.ordNub
-        , note: "'nub' is O(n^2), 'ordNub' is O(n log n)" }
-
-- warn: { lhs: sortBy (comparing f), rhs: Universum.sortWith f
-        , note: "If the function you are using for 'comparing' is slow, use 'sortOn' instead of 'sortWith', because 'sortOn' caches applications the function and 'sortWith' doesn't." }
-
-- warn: { lhs: sortOn fst, rhs: Universum.sortWith fst
-        , note: "'sortWith' will be faster here because it doesn't do caching" }
-- warn: { lhs: sortOn snd, rhs: Universum.sortWith snd
-        , note: "'sortWith' will be faster here because it doesn't do caching" }
-- warn: { lhs: sortOn (Down . fst), rhs: Universum.sortWith (Down . fst)
-        , note: "'sortWith' will be faster here because it doesn't do caching" }
-- warn: { lhs: sortOn (Down . snd), rhs: Universum.sortWith (Down . snd)
-        , note: "'sortWith' will be faster here because it doesn't do caching" }
-
-- warn: {lhs: map fst &&& map snd, rhs: unzip}
-
-- warn: {lhs: f >>= guard, rhs: guardM}
-- warn: {lhs: guard =<< f, rhs: guardM}
-
-- warn: {lhs: fmap concat (mapM f s), rhs: Universum.concatMapM f s}
-- warn: {lhs: concat <$> mapM f s, rhs: Universum.concatMapM f s}
-
-- warn: {lhs: fmap concat (forM f s), rhs: Universum.concatForM s f}
-- warn: {lhs: fmap concat (for f s), rhs: Universum.concatForM s f}
-- warn: {lhs: concat <$> forM f s, rhs: Universum.concatForM s f}
-- warn: {lhs: concat <$> for f s, rhs: Universum.concatForM s f}
-
-- hint: { lhs: fmap and (sequence s), rhs: Universum.andM s
-        , note: "Applying this hint would mean that some actions\n that were being executed previously would no longer be executed." }
-- hint: { lhs: and <$> sequence s, rhs: Universum.andM s
-        , note: "Applying this hint would mean that some actions\n that were being executed previously would no longer be executed." }
-
-- hint: { lhs: fmap or (sequence s), rhs: Universum.orM s
-        , note: "Applying this hint would mean that some actions\n that were being executed previously would no longer be executed." }
-- hint: { lhs: or <$> sequence s, rhs: Universum.orM s
-        , note: "Applying this hint would mean that some actions\n that were being executed previously would no longer be executed." }
-
-- hint: { lhs: fmap and (mapM f s), rhs: Universum.allM f s
-        , note: "Applying this hint would mean that some actions\n that were being executed previously would no longer be executed." }
-- hint: { lhs: and <$> mapM f s, rhs: Universum.allM f s
-        , note: "Applying this hint would mean that some actions\n that were being executed previously would no longer be executed." }
-- hint: { lhs: fmap or (mapM f s), rhs: Universum.anyM f s
-        , note: "Applying this hint would mean that some actions\n that were being executed previously would no longer be executed." }
-- hint: { lhs: or <$> mapM f s, rhs: Universum.anyM f s
-        , note: "Applying this hint would mean that some actions\n that were being executed previously would no longer be executed." }
-
-- warn: {lhs: whenM (not <$> x), rhs: unlessM x}
-- warn: {lhs: unlessM (not <$> x), rhs: whenM x}
-
-- warn: {lhs: either (const True) (const False), rhs: isLeft}
-- warn: {lhs: either (const False) (const True), rhs: isRight}
-
-- warn: {lhs: either id (const a), rhs: fromLeft a}
-- warn: {lhs: either (const b) id, rhs: fromRight b}
-
-- warn: {lhs: either Just (const Nothing), rhs: leftToMaybe}
-- warn: {lhs: either (const Nothing) Just, rhs: rightToMaybe}
-- warn: {lhs: maybe (Left l) Right, rhs: maybeToRight}
-- warn: {lhs: maybe (Right r) Left, rhs: maybeToLeft}
-
-- warn: {lhs: fromMaybe mempty, rhs: maybeToMonoid}
-- warn: {lhs: "m ?: mempty", rhs: maybeToMonoid m}
-
-
-- hint: {lhs: pure (), rhs: pass}
-- hint: {lhs: return (), rhs: pass}
-
-# Probably will be reduced when function equality is done:
-# https://github.com/ndmitchell/hlint/issues/434
-- warn: {lhs: (case m of Just x -> f x; Nothing -> pure ()  ), rhs: Universum.whenJust m f}
-- warn: {lhs: (case m of Just x -> f x; Nothing -> return ()), rhs: Universum.whenJust m f}
-- warn: {lhs: (case m of Just x -> f x; Nothing -> pass     ), rhs: Universum.whenJust m f}
-- warn: {lhs: (case m of Nothing -> pure ()  ; Just x -> f x), rhs: Universum.whenJust m f}
-- warn: {lhs: (case m of Nothing -> return (); Just x -> f x), rhs: Universum.whenJust m f}
-- warn: {lhs: (case m of Nothing -> pass     ; Just x -> f x), rhs: Universum.whenJust m f}
-- warn: {lhs: (maybe (pure ())   f m), rhs: Universum.whenJust m f}
-- warn: {lhs: (maybe (return ()) f m), rhs: Universum.whenJust m f}
-- warn: {lhs: (maybe pass        f m), rhs: Universum.whenJust m f}
-
-- warn: {lhs: (m >>= \case Just x -> f x; Nothing -> pure ()  ), rhs: Universum.whenJustM m f}
-- warn: {lhs: (m >>= \case Just x -> f x; Nothing -> return ()), rhs: Universum.whenJustM m f}
-- warn: {lhs: (m >>= \case Just x -> f x; Nothing -> pass     ), rhs: Universum.whenJustM m f}
-- warn: {lhs: (m >>= \case Nothing -> pure ()  ; Just x -> f x), rhs: Universum.whenJustM m f}
-- warn: {lhs: (m >>= \case Nothing -> return (); Just x -> f x), rhs: Universum.whenJustM m f}
-- warn: {lhs: (m >>= \case Nothing -> pass     ; Just x -> f x), rhs: Universum.whenJustM m f}
-- warn: {lhs: (maybe (pure ())   f =<< m), rhs: Universum.whenJustM m f}
-- warn: {lhs: (maybe (return ()) f =<< m), rhs: Universum.whenJustM m f}
-- warn: {lhs: (maybe pass        f =<< m), rhs: Universum.whenJustM m f}
-- warn: {lhs: (m >>= maybe (pure ())   f), rhs: Universum.whenJustM m f}
-- warn: {lhs: (m >>= maybe (return ()) f), rhs: Universum.whenJustM m f}
-- warn: {lhs: (m >>= maybe pass        f), rhs: Universum.whenJustM m f}
-
-- warn: {lhs: (case m of Just _ -> pure ()  ; Nothing -> x), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (case m of Just _ -> return (); Nothing -> x), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (case m of Just _ -> pass     ; Nothing -> x), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (case m of Nothing -> x; Just _ -> pure ()  ), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (case m of Nothing -> x; Just _ -> return ()), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (case m of Nothing -> x; Just _ -> pass     ), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (maybe x (\_ -> pure ()    ) m), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (maybe x (\_ -> return ()  ) m), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (maybe x (\_ -> pass       ) m), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (maybe x (const (pure ()  )) m), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (maybe x (const (return ())) m), rhs: Universum.whenNothing_ m x}
-- warn: {lhs: (maybe x (const (pass     )) m), rhs: Universum.whenNothing_ m x}
-
-- warn: {lhs: (m >>= \case Just _ -> pure ()  ; Nothing -> x), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= \case Just _ -> return (); Nothing -> x), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= \case Just _ -> pass     ; Nothing -> x), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= \case Nothing -> x; Just _ -> pure ()  ), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= \case Nothing -> x; Just _ -> return ()), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= \case Nothing -> x; Just _ -> pass     ), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (maybe x (\_ -> pure ()    ) =<< m), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (maybe x (\_ -> return ()  ) =<< m), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (maybe x (\_ -> pass       ) =<< m), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (maybe x (const (pure ()  )) =<< m), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (maybe x (const (return ())) =<< m), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (maybe x (const (pass     )) =<< m), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= maybe x (\_ -> pure ())    ), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= maybe x (\_ -> return ())  ), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= maybe x (\_ -> pass)       ), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= maybe x (const (pure ())  )), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= maybe x (const (return ()))), rhs: Universum.whenNothingM_ m x}
-- warn: {lhs: (m >>= maybe x (const (pass)     )), rhs: Universum.whenNothingM_ m x}
-
-- warn: {lhs: (case m of Left x -> f x; Right _ -> pure ()  ), rhs: Universum.whenLeft m f}
-- warn: {lhs: (case m of Left x -> f x; Right _ -> return ()), rhs: Universum.whenLeft m f}
-- warn: {lhs: (case m of Left x -> f x; Right _ -> pass     ), rhs: Universum.whenLeft m f}
-- warn: {lhs: (case m of Right _ -> pure ()  ; Left x -> f x), rhs: Universum.whenLeft m f}
-- warn: {lhs: (case m of Right _ -> return (); Left x -> f x), rhs: Universum.whenLeft m f}
-- warn: {lhs: (case m of Right _ -> pass     ; Left x -> f x), rhs: Universum.whenLeft m f}
-- warn: {lhs: (either f (\_ -> pure ()    ) m), rhs: Universum.whenLeft m f}
-- warn: {lhs: (either f (\_ -> return ()  ) m), rhs: Universum.whenLeft m f}
-- warn: {lhs: (either f (\_ -> pass       ) m), rhs: Universum.whenLeft m f}
-- warn: {lhs: (either f (const (pure ()  )) m), rhs: Universum.whenLeft m f}
-- warn: {lhs: (either f (const (return ())) m), rhs: Universum.whenLeft m f}
-- warn: {lhs: (either f (const (pass     )) m), rhs: Universum.whenLeft m f}
-
-- warn: {lhs: (m >>= \case Left x -> f x; Right _ -> pure ()  ), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= \case Left x -> f x; Right _ -> return ()), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= \case Left x -> f x; Right _ -> pass     ), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= \case Right _ -> pure ()  ; Left x -> f x), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= \case Right _ -> return (); Left x -> f x), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= \case Right _ -> pass     ; Left x -> f x), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (either f (\_ -> pure ()    ) =<< m), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (either f (\_ -> return ()  ) =<< m), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (either f (\_ -> pass       ) =<< m), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (either f (const (pure ()  )) =<< m), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (either f (const (return ())) =<< m), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (either f (const (pass     )) =<< m), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= either f (\_ -> pure ())    ), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= either f (\_ -> return ())  ), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= either f (\_ -> pass)       ), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= either f (const (pure ())  )), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= either f (const (return ()))), rhs: Universum.whenLeftM m f}
-- warn: {lhs: (m >>= either f (const (pass)     )), rhs: Universum.whenLeftM m f}
-
-- warn: {lhs: (case m of Right x -> f x; Left _ -> pure ()  ), rhs: Universum.whenRight m f}
-- warn: {lhs: (case m of Right x -> f x; Left _ -> return ()), rhs: Universum.whenRight m f}
-- warn: {lhs: (case m of Right x -> f x; Left _ -> pass     ), rhs: Universum.whenRight m f}
-- warn: {lhs: (case m of Left _ -> pure ()  ; Right x -> f x), rhs: Universum.whenRight m f}
-- warn: {lhs: (case m of Left _ -> return (); Right x -> f x), rhs: Universum.whenRight m f}
-- warn: {lhs: (case m of Left _ -> pass     ; Right x -> f x), rhs: Universum.whenRight m f}
-- warn: {lhs: (either (\_ -> pure ()    ) f m), rhs: Universum.whenRight m f}
-- warn: {lhs: (either (\_ -> return ()  ) f m), rhs: Universum.whenRight m f}
-- warn: {lhs: (either (\_ -> pass       ) f m), rhs: Universum.whenRight m f}
-- warn: {lhs: (either (const (pure ()  )) f m), rhs: Universum.whenRight m f}
-- warn: {lhs: (either (const (return ())) f m), rhs: Universum.whenRight m f}
-- warn: {lhs: (either (const (pass     )) f m), rhs: Universum.whenRight m f}
-
-- warn: {lhs: (m >>= \case Right x -> f x; Left _ -> pure ()  ), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= \case Right x -> f x; Left _ -> return ()), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= \case Right x -> f x; Left _ -> pass     ), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= \case Left _ -> pure ()  ; Right x -> f x), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= \case Left _ -> return (); Right x -> f x), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= \case Left _ -> pass     ; Right x -> f x), rhs: Universum.whenRightM m f}
-- warn: {lhs: (either (\_ -> pure ()    ) f =<< m), rhs: Universum.whenRightM m f}
-- warn: {lhs: (either (\_ -> return ()  ) f =<< m), rhs: Universum.whenRightM m f}
-- warn: {lhs: (either (\_ -> pass       ) f =<< m), rhs: Universum.whenRightM m f}
-- warn: {lhs: (either (const (pure ()  )) f =<< m), rhs: Universum.whenRightM m f}
-- warn: {lhs: (either (const (return ())) f =<< m), rhs: Universum.whenRightM m f}
-- warn: {lhs: (either (const (pass     )) f =<< m), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= either (\_ -> pure ())     f), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= either (\_ -> return ())   f), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= either (\_ -> pass)        f), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= either (const (pure ())  ) f), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= either (const (return ())) f), rhs: Universum.whenRightM m f}
-- warn: {lhs: (m >>= either (const (pass)     ) f), rhs: Universum.whenRightM m f}
-
-- warn: {lhs: "(case m of [] -> return (); (x:xs) -> f (x :| xs))", rhs: Universum.whenNotNull m f}
-- warn: {lhs: "(case m of [] -> pure ()  ; (x:xs) -> f (x :| xs))", rhs: Universum.whenNotNull m f}
-- warn: {lhs: "(case m of [] -> pass     ; (x:xs) -> f (x :| xs))", rhs: Universum.whenNotNull m f}
-- warn: {lhs: "(case m of (x:xs) -> f (x :| xs); [] -> return ())", rhs: Universum.whenNotNull m f}
-- warn: {lhs: "(case m of (x:xs) -> f (x :| xs); [] -> pure ()  )", rhs: Universum.whenNotNull m f}
-- warn: {lhs: "(case m of (x:xs) -> f (x :| xs); [] -> pass     )", rhs: Universum.whenNotNull m f}
-- warn: {lhs: "(m >>= \\case [] -> pass     ; (x:xs) -> f (x :| xs))", rhs: Universum.whenNotNullM m f}
-- warn: {lhs: "(m >>= \\case [] -> pure ()  ; (x:xs) -> f (x :| xs))", rhs: Universum.whenNotNullM m f}
-- warn: {lhs: "(m >>= \\case [] -> return (); (x:xs) -> f (x :| xs))", rhs: Universum.whenNotNullM m f}
-- warn: {lhs: "(m >>= \\case (x:xs) -> f (x :| xs); [] -> pass     )", rhs: Universum.whenNotNullM m f}
-- warn: {lhs: "(m >>= \\case (x:xs) -> f (x :| xs); [] -> pure ()  )", rhs: Universum.whenNotNullM m f}
-- warn: {lhs: "(m >>= \\case (x:xs) -> f (x :| xs); [] -> return ())", rhs: Universum.whenNotNullM m f}
-
-- warn: {lhs: mapMaybe leftToMaybe, rhs: lefts}
-- warn: {lhs: mapMaybe rightToMaybe, rhs: rights}
-
-############################################################################
-## Reexports
-############################################################################
-
-## Applicative
-- warn: { name: "Use 'Alternative' from Universum"
-        , lhs: Control.Applicative.Alternative, rhs: Universum.Alternative }
-- warn: { name: "Use 'empty' from Universum"
-        , lhs: Control.Applicative.empty, rhs: Universum.empty }
-- warn: { name: "Use '(<|>)' from Universum"
-        , lhs: Control.Applicative.(<|>), rhs: Universum.(<|>) }
-- warn: { name: "Use 'some' from Universum"
-        , lhs: Control.Applicative.some, rhs: Universum.some }
-- warn: { name: "Use 'many' from Universum"
-        , lhs: Control.Applicative.many, rhs: Universum.many }
-- warn: { name: "Use 'Const' from Universum"
-        , lhs: Control.Applicative.Const, rhs: Universum.Const }
-- warn: { name: "Use 'getConst' from Universum"
-        , lhs: Control.Applicative.getConst, rhs: Universum.getConst }
-- warn: { name: "Use 'ZipList' from Universum"
-        , lhs: Control.Applicative.ZipList, rhs: Universum.ZipList }
-- warn: { name: "Use 'getZipList' from Universum"
-        , lhs: Control.Applicative.getZipList, rhs: Universum.getZipList }
-- warn: { name: "Use 'liftA2' from Universum"
-        , lhs: Control.Applicative.liftA2, rhs: Universum.liftA2 }
-- warn: { name: "Use 'liftA3' from Universum"
-        , lhs: Control.Applicative.liftA3, rhs: Universum.liftA3 }
-- warn: { name: "Use 'optional' from Universum"
-        , lhs: Control.Applicative.optional, rhs: Universum.optional }
-- warn: { name: "Use '(<**>)' from Universum"
-        , lhs: Control.Applicative.(<**>), rhs: Universum.(<**>) }
-
-## Base
-- warn: { name: "Use 'xor' from Universum"
-        , lhs: Data.Bits.xor, rhs: Universum.xor }
-
-- warn: { name: "Use 'chr' from Universum"
-        , lhs: Data.Char.chr, rhs: Universum.chr }
-
-- warn: { name: "Use 'Int16' from Universum"
-        , lhs: Data.Int.Int16, rhs: Universum.Int16 }
-- warn: { name: "Use 'Int32' from Universum"
-        , lhs: Data.Int.Int32, rhs: Universum.Int32 }
-- warn: { name: "Use 'Int64' from Universum"
-        , lhs: Data.Int.Int64, rhs: Universum.Int64 }
-- warn: { name: "Use 'Int8' from Universum"
-        , lhs: Data.Int.Int8, rhs: Universum.Int8 }
-
-- warn: { name: "Use 'Word16' from Universum"
-        , lhs: Data.Word.Word16, rhs: Universum.Word16 }
-- warn: { name: "Use 'Word32' from Universum"
-        , lhs: Data.Word.Word32, rhs: Universum.Word32 }
-- warn: { name: "Use 'Word64' from Universum"
-        , lhs: Data.Word.Word64, rhs: Universum.Word64 }
-- warn: { name: "Use 'Word8' from Universum"
-        , lhs: Data.Word.Word8, rhs: Universum.Word8 }
-- warn: { name: "Use 'byteSwap16' from Universum"
-        , lhs: Data.Word.byteSwap16, rhs: Universum.byteSwap16 }
-- warn: { name: "Use 'byteSwap32' from Universum"
-        , lhs: Data.Word.byteSwap32, rhs: Universum.byteSwap32 }
-- warn: { name: "Use 'byteSwap64' from Universum"
-        , lhs: Data.Word.byteSwap64, rhs: Universum.byteSwap64 }
-
-- warn: { name: "Use 'Natural' from Universum"
-        , lhs: Numeric.Natural.Natural, rhs: Universum.Natural }
-
-- warn: { name: "Use 'Handle' from Universum"
-        , lhs: System.IO.Handle, rhs: Universum.Handle }
-- warn: { name: "Use 'IOMode' from Universum"
-        , lhs: System.IO.IOMode, rhs: Universum.IOMode }
-- warn: { name: "Use 'ReadMode' from Universum"
-        , lhs: System.IO.ReadMode, rhs: Universum.ReadMode }
-- warn: { name: "Use 'WriteMode' from Universum"
-        , lhs: System.IO.WriteMode, rhs: Universum.WriteMode }
-- warn: { name: "Use 'AppendMode' from Universum"
-        , lhs: System.IO.AppendMode, rhs: Universum.AppendMode }
-- warn: { name: "Use 'ReadWriteMode' from Universum"
-        , lhs: System.IO.ReadWriteMode, rhs: Universum.ReadWriteMode }
-- warn: { name: "Use 'stderr' from Universum"
-        , lhs: System.IO.stderr, rhs: Universum.stderr }
-- warn: { name: "Use 'stdin' from Universum"
-        , lhs: System.IO.stdin, rhs: Universum.stdin }
-- warn: { name: "Use 'stdout' from Universum"
-        , lhs: System.IO.stdout, rhs: Universum.stdout }
-- warn: { name: "Use 'withFile' from Universum"
-        , lhs: System.IO.withFile, rhs: Universum.withFile }
-
-- warn: { name: "Use 'foldlM' from Universum"
-        , lhs: Data.Foldable.foldlM, rhs: Universum.foldlM }
-- warn: { name: "Use 'foldrM' from Universum"
-        , lhs: Data.Foldable.foldrM, rhs: Universum.foldrM }
-- warn: { name: "Use 'maximumBy' from Universum"
-        , lhs: Data.Foldable.maximumBy, rhs: Universum.maximumBy }
-- warn: { name: "Use 'minimumBy' from Universum"
-        , lhs: Data.Foldable.minimumBy, rhs: Universum.minimumBy }
-
-- warn: { name: "Use 'Down' from Universum"
-        , lhs: Data.Ord.Down, rhs: Universum.Down }
-- warn: { name: "Use 'comparing' from Universum"
-        , lhs: Data.Ord.comparing, rhs: Universum.comparing }
-
-- warn: { name: "Use 'fmapDefault' from Universum"
-        , lhs: Data.Traversable.fmapDefault, rhs: Universum.fmapDefault }
-- warn: { name: "Use 'foldMapDefault' from Universum"
-        , lhs: Data.Traversable.foldMapDefault, rhs: Universum.foldMapDefault }
-- warn: { name: "Use 'forM' from Universum"
-        , lhs: Data.Traversable.forM, rhs: Universum.forM }
-- warn: { name: "Use 'mapAccumL' from Universum"
-        , lhs: Data.Traversable.mapAccumL, rhs: Universum.mapAccumL }
-- warn: { name: "Use 'mapAccumR' from Universum"
-        , lhs: Data.Traversable.mapAccumR, rhs: Universum.mapAccumR }
-
-- warn: { name: "Use 'Proxy' from Universum"
-        , lhs: Data.Proxy.Proxy, rhs: Universum.Proxy }
-
-- warn: { name: "Use 'Typeable' from Universum"
-        , lhs: Data.Typeable.Typeable, rhs: Universum.Typeable }
-
-- warn: { name: "Use 'Void' from Universum"
-        , lhs: Data.Void.Void, rhs: Universum.Void }
-- warn: { name: "Use 'absurd' from Universum"
-        , lhs: Data.Void.absurd, rhs: Universum.absurd }
-- warn: { name: "Use 'vacuous' from Universum"
-        , lhs: Data.Void.vacuous, rhs: Universum.vacuous }
-
-- warn: { name: "Use 'maxInt' from Universum"
-        , lhs: Data.Base.maxInt, rhs: Universum.maxInt }
-- warn: { name: "Use 'minInt' from Universum"
-        , lhs: Data.Base.minInt, rhs: Universum.minInt }
-- warn: { name: "Use 'ord' from Universum"
-        , lhs: Data.Base.ord, rhs: Universum.ord }
-
-- warn: { name: "Use 'boundedEnumFrom' from Universum"
-        , lhs: GHC.Enum.boundedEnumFrom, rhs: Universum.boundedEnumFrom }
-- warn: { name: "Use 'boundedEnumFromThen' from Universum"
-        , lhs: GHC.Enum.boundedEnumFromThen, rhs: Universum.boundedEnumFromThen }
-
-- warn: { name: "Use 'Constraint' from Universum"
-        , lhs: GHC.Exts.Constraint, rhs: Universum.Constraint }
-- warn: { name: "Use 'FunPtr' from Universum"
-        , lhs: GHC.Exts.FunPtr, rhs: Universum.FunPtr }
-- warn: { name: "Use 'Ptr' from Universum"
-        , lhs: GHC.Exts.Ptr, rhs: Universum.Ptr }
-
-- warn: { name: "Use 'Generic' from Universum"
-        , lhs: GHC.Generics.Generic, rhs: Universum.Generic }
-
-- warn: { name: "Use 'Ratio' from Universum"
-        , lhs: GHC.Real.Ratio, rhs: Universum.Ratio }
-- warn: { name: "Use 'Rational' from Universum"
-        , lhs: GHC.Real.Rational, rhs: Universum.Rational }
-
-- warn: { name: "Use 'CmpNat' from Universum"
-        , lhs: GHC.TypeNats.CmpNat, rhs: Universum.CmpNat }
-- warn: { name: "Use 'KnownNat' from Universum"
-        , lhs: GHC.TypeNats.KnownNat, rhs: Universum.KnownNat }
-- warn: { name: "Use 'Nat' from Universum"
-        , lhs: GHC.TypeNats.Nat, rhs: Universum.Nat }
-- warn: { name: "Use 'SomeNat' from Universum"
-        , lhs: GHC.TypeNats.SomeNat, rhs: Universum.SomeNat }
-- warn: { name: "Use 'natVal' from Universum"
-        , lhs: GHC.TypeNats.natVal, rhs: Universum.natVal }
-- warn: { name: "Use 'someNatVal' from Universum"
-        , lhs: GHC.TypeNats.someNatVal, rhs: Universum.someNatVal }
-
-- warn: { name: "Use 'CmpNat' from Universum"
-        , lhs: GHC.TypeLits.CmpNat, rhs: Universum.CmpNat }
-- warn: { name: "Use 'KnownNat' from Universum"
-        , lhs: GHC.TypeLits.KnownNat, rhs: Universum.KnownNat }
-- warn: { name: "Use 'Nat' from Universum"
-        , lhs: GHC.TypeLits.Nat, rhs: Universum.Nat }
-- warn: { name: "Use 'SomeNat' from Universum"
-        , lhs: GHC.TypeLits.SomeNat, rhs: Universum.SomeNat }
-- warn: { name: "Use 'natVal' from Universum"
-        , lhs: GHC.TypeLits.natVal, rhs: Universum.natVal }
-- warn: { name: "Use 'someNatVal' from Universum"
-        , lhs: GHC.TypeLits.someNatVal, rhs: Universum.someNatVal }
-
-- warn: { name: "Use 'Coercible' from Universum"
-        , lhs: GHC.Types.Coercible, rhs: Universum.Coercible }
-
-- warn: { name: "Use 'getStackTrace' from Universum"
-        , lhs: GHC.ExecutionStack.getStackTrace, rhs: Universum.getStackTrace }
-- warn: { name: "Use 'showStackTrace' from Universum"
-        , lhs: GHC.ExecutionStack.showStackTrace, rhs: Universum.showStackTrace }
-
-- warn: { name: "Use 'IsLabel' from Universum"
-        , lhs: GHC.OverloadedLabels.IsLabel, rhs: Universum.IsLabel }
-- warn: { name: "Use 'fromLabel' from Universum"
-        , lhs: GHC.OverloadedLabels.fromLabel, rhs: Universum.fromLabel }
-
-- warn: { name: "Use 'CallStack' from Universum"
-        , lhs: GHC.Stack.CallStack, rhs: Universum.CallStack }
-- warn: { name: "Use 'HasCallStack' from Universum"
-        , lhs: GHC.Stack.HasCallStack, rhs: Universum.HasCallStack }
-- warn: { name: "Use 'callStack' from Universum"
-        , lhs: GHC.Stack.callStack, rhs: Universum.callStack }
-- warn: { name: "Use 'currentCallStack' from Universum"
-        , lhs: GHC.Stack.currentCallStack, rhs: Universum.currentCallStack }
-- warn: { name: "Use 'getCallStack' from Universum"
-        , lhs: GHC.Stack.getCallStack, rhs: Universum.getCallStack }
-- warn: { name: "Use 'prettyCallStack' from Universum"
-        , lhs: GHC.Stack.prettyCallStack, rhs: Universum.prettyCallStack }
-- warn: { name: "Use 'prettySrcLoc' from Universum"
-        , lhs: GHC.Stack.prettySrcLoc, rhs: Universum.prettySrcLoc }
-- warn: { name: "Use 'withFrozenCallStack' from Universum"
-        , lhs: GHC.Stack.withFrozenCallStack, rhs: Universum.withFrozenCallStack }
-
-- warn: { name: "Use 'Type' from Universum"
-        , lhs: Data.Kind.Type, rhs: Universum.Type }
-
-## Bool
-
-- warn: { name: "Use 'guard' from Universum"
-        , lhs: Control.Monad.guard, rhs: Universum.guard }
-- warn: { name: "Use 'unless' from Universum"
-        , lhs: Control.Monad.unless, rhs: Universum.unless }
-- warn: { name: "Use 'when' from Universum"
-        , lhs: Control.Monad.when, rhs: Universum.when }
-- warn: { name: "Use 'bool' from Universum"
-        , lhs: Data.Bool.bool, rhs: Universum.bool }
-
-## Container
-- warn: { name: "Use 'Hashable' from Universum"
-        , lhs: Data.Hashable.Hashable, rhs: Universum.Hashable }
-- warn: { name: "Use 'hashWithSalt' from Universum"
-        , lhs: Data.Hashable.hashWithSalt, rhs: Universum.hashWithSalt }
-- warn: { name: "Use 'HashMap' from Universum"
-        , lhs: Data.HashMap.Strict.HashMap, rhs: Universum.HashMap }
-- warn: { name: "Use 'HashSet' from Universum"
-        , lhs: Data.HashSet.HashSet, rhs: Universum.HashSet }
-- warn: { name: "Use 'IntMap' from Universum"
-        , lhs: Data.IntMap.Strict.IntMap, rhs: Universum.IntMap }
-- warn: { name: "Use 'IntSet' from Universum"
-        , lhs: Data.IntSet.IntSet, rhs: Universum.IntSet }
-- warn: { name: "Use 'Map' from Universum"
-        , lhs: Data.Map.Strict.Map, rhs: Universum.Map }
-- warn: { name: "Use 'Sequence' from Universum"
-        , lhs: Data.Sequence.Sequence, rhs: Universum.Sequence }
-- warn: { name: "Use 'Set' from Universum"
-        , lhs: Data.Set.Set, rhs: Universum.Set }
-- warn: { name: "Use 'swap' from Universum"
-        , lhs: Data.Tuple.swap, rhs: Universum.swap }
-- warn: { name: "Use 'Vector' from Universum"
-        , lhs: Data.Vector.Vector, rhs: Universum.Vector }
-
-## Deepseq
-- warn: { name: "Use 'NFData' from Universum"
-        , lhs: Control.DeepSeq.NFData, rhs: Universum.NFData }
-- warn: { name: "Use 'rnf' from Universum"
-        , lhs: Control.DeepSeq.rnf, rhs: Universum.rnf }
-- warn: { name: "Use 'deepseq' from Universum"
-        , lhs: Control.DeepSeq.deepseq, rhs: Universum.deepseq }
-- warn: { name: "Use 'force' from Universum"
-        , lhs: Control.DeepSeq.force, rhs: Universum.force }
-- warn: { name: "Use '($!!)' from Universum"
-        , lhs: "Control.DeepSeq.($!!)", rhs: "Universum.($!!)" }
-
-## Exception
-- warn: { name: "Use 'Exception' from Universum"
-        , lhs: Control.Exception.Exception, rhs: Universum.Exception }
-- warn: { name: "Use 'toException' from Universum"
-        , lhs: Control.Exception.toException, rhs: Universum.toException }
-- warn: { name: "Use 'fromException' from Universum"
-        , lhs: Control.Exception.fromException, rhs: Universum.fromException }
-
-- warn: { name: "Use 'Exception' from Universum"
-        , lhs: Control.Exception.Safe.Exception, rhs: Universum.Exception }
-- warn: { name: "Use 'toException' from Universum"
-        , lhs: Control.Exception.Safe.toException, rhs: Universum.toException }
-- warn: { name: "Use 'fromException' from Universum"
-        , lhs: Control.Exception.Safe.fromException, rhs: Universum.fromException }
-- warn: { name: "Use 'displayException' from Universum"
-        , lhs: Control.Exception.Safe.displayException, rhs: Universum.displayException }
-- warn: { name: "Use 'MonadCatch' from Universum"
-        , lhs: Control.Exception.Safe.MonadCatch, rhs: Universum.MonadCatch }
-- warn: { name: "Use 'MonadMask' from Universum"
-        , lhs: Control.Exception.Safe.MonadMask, rhs: Universum.MonadMask }
-- warn: { name: "Use 'mask' from Universum"
-        , lhs: Control.Exception.Safe.mask, rhs: Universum.mask }
-- warn: { name: "Use 'uninterruptibleMask' from Universum"
-        , lhs: Control.Exception.Safe.uninterruptibleMask, rhs: Universum.uninterruptibleMask }
-- warn: { name: "Use 'MonadThrow' from Universum"
-        , lhs: Control.Exception.Safe.MonadThrow, rhs: Universum.MonadThrow }
-- warn: { name: "Use 'SomeException' from Universum"
-        , lhs: Control.Exception.Safe.SomeException, rhs: Universum.SomeException }
-- warn: { name: "Use 'bracket' from Universum"
-        , lhs: Control.Exception.Safe.bracket, rhs: Universum.bracket }
-- warn: { name: "Use 'bracketOnError' from Universum"
-        , lhs: Control.Exception.Safe.bracketOnError, rhs: Universum.bracketOnError }
-- warn: { name: "Use 'bracket_' from Universum"
-        , lhs: Control.Exception.Safe.bracket_, rhs: Universum.bracket_ }
-- warn: { name: "Use 'catch' from Universum"
-        , lhs: Control.Exception.Safe.catch, rhs: Universum.catch }
-- warn: { name: "Use 'catchAny' from Universum"
-        , lhs: Control.Exception.Safe.catchAny, rhs: Universum.catchAny }
-- warn: { name: "Use 'finally' from Universum"
-        , lhs: Control.Exception.Safe.finally, rhs: Universum.finally }
-- warn: { name: "Use 'handleAny' from Universum"
-        , lhs: Control.Exception.Safe.handleAny, rhs: Universum.handleAny }
-- warn: { name: "Use 'onException' from Universum"
-        , lhs: Control.Exception.Safe.onException, rhs: Universum.onException }
-- warn: { name: "Use 'throwM' from Universum"
-        , lhs: Control.Exception.Safe.throwM, rhs: Universum.throwM }
-- warn: { name: "Use 'try' from Universum"
-        , lhs: Control.Exception.Safe.try, rhs: Universum.try }
-- warn: { name: "Use 'tryAny' from Universum"
-        , lhs: Control.Exception.Safe.tryAny, rhs: Universum.tryAny }
-
-## Function
-- warn: { name: "Use 'fix' from Universum"
-        , lhs: Data.Function.fix, rhs: Universum.fix }
-- warn: { name: "Use 'on' from Universum"
-        , lhs: Data.Function.on, rhs: Universum.on }
-
-## Functor
-- warn: { name: "Use '(&&&)' from Universum"
-        , lhs: Control.Arrow.(&&&), rhs: Universum.(&&&) }
-- warn: { name: "Use 'Bifunctor' from Universum"
-        , lhs: Data.Bifunctor.Bifunctor, rhs: Universum.Bifunctor }
-- warn: { name: "Use 'bimap' from Universum"
-        , lhs: Data.Bifunctor.bimap, rhs: Universum.bimap }
-- warn: { name: "Use 'first' from Universum"
-        , lhs: Data.Bifunctor.first, rhs: Universum.first }
-- warn: { name: "Use 'second' from Universum"
-        , lhs: Data.Bifunctor.second, rhs: Universum.second }
-- warn: { name: "Use 'void' from Universum"
-        , lhs: Data.Functor.void, rhs: Universum.void }
-- warn: { name: "Use '($>)' from Universum"
-        , lhs: Data.Functor.($>), rhs: Universum.($>) }
-- warn: { name: "Use 'Compose' from Universum"
-        , lhs: Data.Functor.Compose.Compose, rhs: Universum.Compose }
-- warn: { name: "Use 'getCompose' from Universum"
-        , lhs: Data.Functor.Compose.getCompose, rhs: Universum.getCompose }
-- warn: { name: "Use 'Identity' from Universum"
-        , lhs: Data.Functor.Identity.Identity, rhs: Universum.Identity }
-- warn: { name: "Use 'runIdentity' from Universum"
-        , lhs: Data.Functor.Identity.runIdentity, rhs: Universum.runIdentity }
-
-## List
-- warn: { name: "Use 'genericDrop' from Universum"
-        , lhs: Data.List.genericDrop, rhs: Universum.genericDrop }
-- warn: { name: "Use 'genericLength' from Universum"
-        , lhs: Data.List.genericLength, rhs: Universum.genericLength }
-- warn: { name: "Use 'genericReplicate' from Universum"
-        , lhs: Data.List.genericReplicate, rhs: Universum.genericReplicate }
-- warn: { name: "Use 'genericSplitAt' from Universum"
-        , lhs: Data.List.genericSplitAt, rhs: Universum.genericSplitAt }
-- warn: { name: "Use 'genericTake' from Universum"
-        , lhs: Data.List.genericTake, rhs: Universum.genericTake }
-- warn: { name: "Use 'group' from Universum"
-        , lhs: Data.List.group, rhs: Universum.group }
-- warn: { name: "Use 'inits' from Universum"
-        , lhs: Data.List.inits, rhs: Universum.inits }
-- warn: { name: "Use 'intercalate' from Universum"
-        , lhs: Data.List.intercalate, rhs: Universum.intercalate }
-- warn: { name: "Use 'intersperse' from Universum"
-        , lhs: Data.List.intersperse, rhs: Universum.intersperse }
-- warn: { name: "Use 'isPrefixOf' from Universum"
-        , lhs: Data.List.isPrefixOf, rhs: Universum.isPrefixOf }
-- warn: { name: "Use 'permutations' from Universum"
-        , lhs: Data.List.permutations, rhs: Universum.permutations }
-- warn: { name: "Use 'sort' from Universum"
-        , lhs: Data.List.sort, rhs: Universum.sort }
-- warn: { name: "Use 'sortBy' from Universum"
-        , lhs: Data.List.sortBy, rhs: Universum.sortBy }
-- warn: { name: "Use 'sortOn' from Universum"
-        , lhs: Data.List.sortOn, rhs: Universum.sortOn }
-- warn: { name: "Use 'subsequences' from Universum"
-        , lhs: Data.List.subsequences, rhs: Universum.subsequences }
-- warn: { name: "Use 'tails' from Universum"
-        , lhs: Data.List.tails, rhs: Universum.tails }
-- warn: { name: "Use 'transpose' from Universum"
-        , lhs: Data.List.transpose, rhs: Universum.transpose }
-- warn: { name: "Use 'unfoldr' from Universum"
-        , lhs: Data.List.unfoldr, rhs: Universum.unfoldr }
-
-- warn: { name: "Use 'NonEmpty' from Universum"
-        , lhs: Data.List.NonEmpty.NonEmpty, rhs: Universum.NonEmpty }
-- warn: { name: "Use '(:|)' from Universum"
-        , lhs: "Data.List.NonEmpty.(:|)", rhs: "Universum.(:|)"}
-- warn: { name: "Use 'nonEmpty' from Universum"
-        , lhs: Data.List.NonEmpty.nonEmpty, rhs: Universum.nonEmpty}
-- warn: { name: "Use 'head' from Universum"
-        , lhs: Data.List.NonEmpty.head, rhs: Universum.head }
-- warn: { name: "Use 'init' from Universum"
-        , lhs: Data.List.NonEmpty.init, rhs: Universum.init }
-- warn: { name: "Use 'last' from Universum"
-        , lhs: Data.List.NonEmpty.last, rhs: Universum.last }
-- warn: { name: "Use 'tail' from Universum"
-        , lhs: Data.List.NonEmpty.tail, rhs: Universum.tail }
-- warn: { name: "Use 'sortWith' from Universum"
-        , lhs: GHC.Exts.sortWith, rhs: Universum.sortWith }
-
-## Monad
-- warn: { name: "Use '(>=>)' from Universum"
-        , lhs: Control.Monad.(>=>), rhs: Universum.(>=>) }
-- warn: { name: "Use '(<=<)' from Universum"
-        , lhs: Control.Monad.(<=<), rhs: Universum.(<=<) }
-- warn: { name: "Use 'forever' from Universum"
-        , lhs: Control.Monad.forever, rhs: Universum.forever }
-- warn: { name: "Use 'join' from Universum"
-        , lhs: Control.Monad.join, rhs: Universum.join }
-- warn: { name: "Use 'mfilter' from Universum"
-        , lhs: Control.Monad.mfilter, rhs: Universum.mfilter }
-- warn: { name: "Use 'filterM' from Universum"
-        , lhs: Control.Monad.filterM, rhs: Universum.filterM }
-- warn: { name: "Use 'mapAndUnzipM' from Universum"
-        , lhs: Control.Monad.mapAndUnzipM, rhs: Universum.mapAndUnzipM }
-- warn: { name: "Use 'zipWithM' from Universum"
-        , lhs: Control.Monad.zipWithM, rhs: Universum.zipWithM }
-- warn: { name: "Use 'zipWithM_' from Universum"
-        , lhs: Control.Monad.zipWithM_, rhs: Universum.zipWithM_ }
-- warn: { name: "Use 'foldM' from Universum"
-        , lhs: Control.Monad.foldM, rhs: Universum.foldM }
-- warn: { name: "Use 'foldM_' from Universum"
-        , lhs: Control.Monad.foldM_, rhs: Universum.foldM_ }
-- warn: { name: "Use 'replicateM' from Universum"
-        , lhs: Control.Monad.replicateM, rhs: Universum.replicateM }
-- warn: { name: "Use 'replicateM_' from Universum"
-        , lhs: Control.Monad.replicateM_, rhs: Universum.replicateM_ }
-- warn: { name: "Use 'liftM2' from Universum"
-        , lhs: Control.Monad.liftM2, rhs: Universum.liftM2 }
-- warn: { name: "Use 'liftM3' from Universum"
-        , lhs: Control.Monad.liftM3, rhs: Universum.liftM3 }
-- warn: { name: "Use 'liftM4' from Universum"
-        , lhs: Control.Monad.liftM4, rhs: Universum.liftM4 }
-- warn: { name: "Use 'liftM5' from Universum"
-        , lhs: Control.Monad.liftM5, rhs: Universum.liftM5 }
-- warn: { name: "Use 'ap' from Universum"
-        , lhs: Control.Monad.ap, rhs: Universum.ap }
-- warn: { name: "Use '(<$!>)' from Universum"
-        , lhs: Control.Monad.(<$!>), rhs: Universum.(<$!>) }
-
-- warn: { name: "Use 'ExceptT' from Universum"
-        , lhs: Control.Monad.Except.ExceptT, rhs: Universum.ExceptT }
-- warn: { name: "Use 'runExceptT' from Universum"
-        , lhs: Control.Monad.Except.runExceptT, rhs: Universum.runExceptT }
-
-- warn: { name: "Use 'MonadReader' from Universum"
-        , lhs: Control.Monad.Reader.MonadReader, rhs: Universum.MonadReader }
-- warn: { name: "Use 'Reader' from Universum"
-        , lhs: Control.Monad.Reader.Reader, rhs: Universum.Reader }
-- warn: { name: "Use 'ReaderT' from Universum"
-        , lhs: Control.Monad.Reader.ReaderT, rhs: Universum.ReaderT }
-- warn: { name: "Use 'runReaderT' from Universum"
-        , lhs: Control.Monad.Reader.runReaderT, rhs: Universum.runReaderT }
-- warn: { name: "Use 'ask' from Universum"
-        , lhs: Control.Monad.Reader.ask, rhs: Universum.ask }
-- warn: { name: "Use 'local' from Universum"
-        , lhs: Control.Monad.Reader.local, rhs: Universum.local }
-- warn: { name: "Use 'reader' from Universum"
-        , lhs: Control.Monad.Reader.reader, rhs: Universum.reader }
-- warn: { name: "Use 'runReader' from Universum"
-        , lhs: Control.Monad.Reader.runReader, rhs: Universum.runReader }
-
-- warn: { name: "Use 'MonadState' from Universum"
-        , lhs: Control.Monad.State.Strict.MonadState, rhs: Universum.MonadState }
-- warn: { name: "Use 'State' from Universum"
-        , lhs: Control.Monad.State.Strict.State, rhs: Universum.State }
-- warn: { name: "Use 'StateT' from Universum"
-        , lhs: Control.Monad.State.Strict.StateT, rhs: Universum.StateT }
-- warn: { name: "Use 'runStateT' from Universum"
-        , lhs: Control.Monad.State.Strict.runStateT, rhs: Universum.runStateT }
-- warn: { name: "Use 'evalState' from Universum"
-        , lhs: Control.Monad.State.Strict.evalState, rhs: Universum.evalState }
-- warn: { name: "Use 'evalStateT' from Universum"
-        , lhs: Control.Monad.State.Strict.evalStateT, rhs: Universum.evalStateT }
-- warn: { name: "Use 'execState' from Universum"
-        , lhs: Control.Monad.State.Strict.execState, rhs: Universum.execState }
-- warn: { name: "Use 'execStateT' from Universum"
-        , lhs: Control.Monad.State.Strict.execStateT, rhs: Universum.execStateT }
-- warn: { name: "Use 'get' from Universum"
-        , lhs: Control.Monad.State.Strict.get, rhs: Universum.get }
-- warn: { name: "Use 'gets' from Universum"
-        , lhs: Control.Monad.State.Strict.gets, rhs: Universum.gets }
-- warn: { name: "Use 'modify' from Universum"
-        , lhs: Control.Monad.State.Strict.modify, rhs: Universum.modify }
-- warn: { name: "Use 'modify'' from Universum"
-        , lhs: "Control.Monad.State.Strict.modify'", rhs: "Universum.modify'" }
-- warn: { name: "Use 'put' from Universum"
-        , lhs: Control.Monad.State.Strict.put, rhs: Universum.put }
-- warn: { name: "Use 'runState' from Universum"
-        , lhs: Control.Monad.State.Strict.runState, rhs: Universum.runState }
-- warn: { name: "Use 'state' from Universum"
-        , lhs: Control.Monad.State.Strict.state, rhs: Universum.state }
-- warn: { name: "Use 'withState' from Universum"
-        , lhs: Control.Monad.State.Strict.withState, rhs: Universum.withState }
-
-- warn: { name: "Use 'MonadFail' from Universum"
-        , lhs: Control.Monad.Fail.MonadFail, rhs: Universum.MonadFail }
-
-
-- warn: { name: "Use 'MonadIO' from Universum"
-        , lhs: Control.Monad.Trans.MonadIO, rhs: Universum.MonadIO }
-- warn: { name: "Use 'MonadTrans' from Universum"
-        , lhs: Control.Monad.Trans.MonadTrans, rhs: Universum.MonadTrans }
-- warn: { name: "Use 'lift' from Universum"
-        , lhs: Control.Monad.Trans.lift, rhs: Universum.lift }
-- warn: { name: "Use 'liftIO' from Universum"
-        , lhs: Control.Monad.Trans.liftIO, rhs: Universum.liftIO }
-
-- warn: { name: "Use 'IdentityT' from Universum"
-        , lhs: Control.Monad.Trans.Identity.IdentityT, rhs: Universum.IdentityT }
-- warn: { name: "Use 'runIdentityT' from Universum"
-        , lhs: Control.Monad.Trans.Identity.runIdentityT, rhs: Universum.runIdentityT }
-
-- warn: { name: "Use 'MaybeT' from Universum"
-        , lhs: Control.Monad.Trans.Maybe.MaybeT, rhs: Universum.MaybeT }
-- warn: { name: "Use 'maybeToExceptT' from Universum"
-        , lhs: Control.Monad.Trans.Maybe.maybeToExceptT, rhs: Universum.maybeToExceptT }
-- warn: { name: "Use 'exceptToMaybeT' from Universum"
-        , lhs: Control.Monad.Trans.Maybe.exceptToMaybeT, rhs: Universum.exceptToMaybeT }
-
-- warn: { name: "Use 'catMaybes' from Universum"
-        , lhs: Data.Maybe.catMaybes, rhs: Universum.catMaybes }
-- warn: { name: "Use 'fromMaybe' from Universum"
-        , lhs: Data.Maybe.fromMaybe, rhs: Universum.fromMaybe }
-- warn: { name: "Use 'isJust' from Universum"
-        , lhs: Data.Maybe.isJust, rhs: Universum.isJust }
-- warn: { name: "Use 'isNothing' from Universum"
-        , lhs: Data.Maybe.isNothing, rhs: Universum.isNothing }
-- warn: { name: "Use 'listToMaybe' from Universum"
-        , lhs: Data.Maybe.listToMaybe, rhs: Universum.listToMaybe }
-- warn: { name: "Use 'mapMaybe' from Universum"
-        , lhs: Data.Maybe.mapMaybe, rhs: Universum.mapMaybe }
-- warn: { name: "Use 'maybeToList' from Universum"
-        , lhs: Data.Maybe.maybeToList, rhs: Universum.maybeToList }
-
-- warn: { name: "Use 'isLeft' from Universum"
-        , lhs: Data.Either.isLeft, rhs: Universum.isLeft }
-- warn: { name: "Use 'isRight' from Universum"
-        , lhs: Data.Either.isRight, rhs: Universum.isRight }
-- warn: { name: "Use 'lefts' from Universum"
-        , lhs: Data.Either.lefts, rhs: Universum.lefts }
-- warn: { name: "Use 'partitionEithers' from Universum"
-        , lhs: Data.Either.partitionEithers, rhs: Universum.partitionEithers }
-- warn: { name: "Use 'rights' from Universum"
-        , lhs: Data.Either.rights, rhs: Universum.rights }
-
-- warn: { name: "Use 'newTVar' from Universum"
-        , lhs: Control.Concurrent.STM.TVar.newTVar, rhs: Universum.newTVar }
-- warn: { name: "Use 'readTVar' from Universum"
-        , lhs: Control.Concurrent.STM.TVar.readTVar, rhs: Universum.readTVar }
-- warn: { name: "Use 'writeTVar' from Universum"
-        , lhs: Control.Concurrent.STM.TVar.writeTVar, rhs: Universum.writeTVar }
-- warn: { name: "Use 'modifyTVar'' from Universum"
-        , lhs: "Control.Concurrent.STM.TVar.modifyTVar'", rhs: "Universum.modifyTVar'" }
-- warn: { name: "Use 'newTVarIO' from Universum"
-        , lhs: Control.Concurrent.STM.TVar.newTVarIO, rhs: Universum.newTVarIO }
-- warn: { name: "Use 'readTVarIO' from Universum"
-        , lhs: Control.Concurrent.STM.TVar.readTVarIO, rhs: Universum.readTVarIO }
-
-- warn: { name: "Use 'newIORef' from Universum"
-        , lhs: Data.IORef.newIORef, rhs: Universum.newIORef }
-- warn: { name: "Use 'readIORef' from Universum"
-        , lhs: Data.IORef.readIORef, rhs: Universum.readIORef }
-- warn: { name: "Use 'writeIORef' from Universum"
-        , lhs: Data.IORef.writeIORef, rhs: Universum.writeIORef }
-- warn: { name: "Use 'modifyIORef' from Universum"
-        , lhs: Data.IORef.modifyIORef, rhs: Universum.modifyIORef }
-- warn: { name: "Use 'modifyIORef'' from Universum"
-        , lhs: "Data.IORef.modifyIORef'", rhs: "Universum.modifyIORef'" }
-- warn: { name: "Use 'atomicModifyIORef' from Universum"
-        , lhs: Data.IORef.atomicModifyIORef, rhs: Universum.atomicModifyIORef }
-- warn: { name: "Use 'atomicModifyIORef'' from Universum"
-        , lhs: "Data.IORef.atomicModifyIORef'", rhs: "Universum.atomicModifyIORef'" }
-- warn: { name: "Use 'atomicWriteIORef' from Universum"
-        , lhs: Data.IORef.atomicWriteIORef, rhs: Universum.atomicWriteIORef }
-
-## Monoid
-- warn: { name: "Use 'All' from Universum"
-        , lhs: Data.Monoid.All, rhs: Universum.All }
-- warn: { name: "Use 'Alt' from Universum"
-        , lhs: Data.Monoid.Alt, rhs: Universum.Alt }
-- warn: { name: "Use 'Any' from Universum"
-        , lhs: Data.Monoid.Any, rhs: Universum.Any }
-- warn: { name: "Use 'Dual' from Universum"
-        , lhs: Data.Monoid.Dual, rhs: Universum.Dual }
-- warn: { name: "Use 'Endo' from Universum"
-        , lhs: Data.Monoid.Endo, rhs: Universum.Endo }
-- warn: { name: "Use 'First' from Universum"
-        , lhs: Data.Monoid.First, rhs: Universum.First }
-- warn: { name: "Use 'Last' from Universum"
-        , lhs: Data.Monoid.Last, rhs: Universum.Last }
-- warn: { name: "Use 'Product' from Universum"
-        , lhs: Data.Monoid.Product, rhs: Universum.Product }
-- warn: { name: "Use 'Sum' from Universum"
-        , lhs: Data.Monoid.Sum, rhs: Universum.Sum }
-
-- warn: { name: "Use 'Option' from Universum"
-        , lhs: Data.Semigroup.Option, rhs: Universum.Option }
-- warn: { name: "Use 'Semigroup' from Universum"
-        , lhs: Data.Semigroup.Semigroup, rhs: Universum.Semigroup }
-- warn: { name: "Use 'sconcat' from Universum"
-        , lhs: Data.Semigroup.sconcat, rhs: Universum.sconcat }
-- warn: { name: "Use 'stimes' from Universum"
-        , lhs: Data.Semigroup.stimes, rhs: Universum.stimes }
-- warn: { name: "Use '(<>)' from Universum"
-        , lhs: Data.Semigroup.(<>), rhs: Universum.(<>) }
-- warn: { name: "Use 'WrappedMonoid' from Universum"
-        , lhs: Data.Semigroup.WrappedMonoid, rhs: Universum.WrappedMonoid }
-- warn: { name: "Use 'cycle1' from Universum"
-        , lhs: Data.Semigroup.cycle1, rhs: Universum.cycle1 }
-- warn: { name: "Use 'mtimesDefault' from Universum"
-        , lhs: Data.Semigroup.mtimesDefault, rhs: Universum.mtimesDefault }
-- warn: { name: "Use 'stimesIdempotent' from Universum"
-        , lhs: Data.Semigroup.stimesIdempotent, rhs: Universum.stimesIdempotent }
-- warn: { name: "Use 'stimesIdempotentMonoid' from Universum"
-        , lhs: Data.Semigroup.stimesIdempotentMonoid, rhs: Universum.stimesIdempotentMonoid }
-- warn: { name: "Use 'stimesMonoid' from Universum"
-        , lhs: Data.Semigroup.stimesMonoid, rhs: Universum.stimesMonoid }
-
-## String
-- warn: { name: "Use 'ByteString' from Universum"
-        , lhs: Data.ByteString.ByteString, rhs: Universum.ByteString }
-- warn: { name: "Use 'IsString' from Universum"
-        , lhs: Data.String.IsString, rhs: Universum.IsString }
-
-- warn: { name: "Use 'Text' from Universum"
-        , lhs: Data.Text.Text, rhs: Universum.Text }
-- warn: { name: "Use 'lines' from Universum"
-        , lhs: Data.Text.lines, rhs: Universum.lines }
-- warn: { name: "Use 'unlines' from Universum"
-        , lhs: Data.Text.unlines, rhs: Universum.unlines }
-- warn: { name: "Use 'words' from Universum"
-        , lhs: Data.Text.words, rhs: Universum.words }
-- warn: { name: "Use 'unwords' from Universum"
-        , lhs: Data.Text.unwords, rhs: Universum.unwords }
-
-- warn: { name: "Use 'LText' from Universum"
-        , lhs: Data.Text.Lazy.Text, rhs: Universum.LText }
-- warn: { name: "Use 'LByteString' from Universum"
-        , lhs: Data.ByteString.Lazy.LByteString, rhs: Universum.LByteString }
-
-- warn: { name: "Use 'Buildable' from Universum"
-        , lhs: Data.Text.Buildable, rhs: Universum.Buildable }
-- warn: { name: "Use 'decodeUtf8'' from Universum"
-        , lhs: "Data.Text.Encoding.decodeUtf8'", rhs: "Universum.decodeUtf8'" }
-- warn: { name: "Use 'decodeUtf8With' from Universum"
-        , lhs: Data.Text.Encoding.decodeUtf8With, rhs: Universum.decodeUtf8With }
-
-- warn: { name: "Use 'OnDecodeError' from Universum"
-        , lhs: Data.Text.Encoding.Error.OnDecodeError, rhs: Universum.OnDecodeError }
-- warn: { name: "Use 'OnDecodeError' from Universum"
-        , lhs: Data.Text.Encoding.Error.OnDecodeError, rhs: Universum.OnDecodeError }
-- warn: { name: "Use 'OnError' from Universum"
-        , lhs: Data.Text.Encoding.Error.OnError, rhs: Universum.OnError }
-- warn: { name: "Use 'UnicodeException' from Universum"
-        , lhs: Data.Text.Encoding.Error.UnicodeException, rhs: Universum.UnicodeException }
-- warn: { name: "Use 'lenientDecode' from Universum"
-        , lhs: Data.Text.Encoding.Error.lenientDecode, rhs: Universum.lenientDecode }
-- warn: { name: "Use 'strictDecode' from Universum"
-        , lhs: Data.Text.Encoding.Error.strictDecode, rhs: Universum.strictDecode }
-
-- warn: { name: "Use 'fromStrict' from Universum"
-        , lhs: Data.Text.Lazy.fromStrict, rhs: Universum.fromStrict }
-- warn: { name: "Use 'toStrict' from Universum"
-        , lhs: Data.Text.Lazy.toStrict, rhs: Universum.toStrict }
-
-- warn: { name: "Use 'readMaybe' from Universum"
-        , lhs: Text.Read.readMaybe, rhs: Universum.readMaybe }
-
-- warn: { name: "Use 'getLine' from Universum"
-        , lhs: Data.Text.IO.getLine, rhs: Universum.getLine }
-- warn: { name: "Use 'readFile' from Universum"
-        , lhs: Data.Text.IO.readFile, rhs: Universum.readFile }
-- warn: { name: "Use 'writeFile' from Universum"
-        , lhs: Data.Text.IO.writeFile, rhs: Universum.writeFile }
-- warn: { name: "Use 'appendFile' from Universum"
-        , lhs: Data.Text.IO.appendFile, rhs: Universum.appendFile }
-
-## Unsafe
-- warn: { name: "Use 'head' from Universum.Unsafe"
-        , lhs: Data.List.head, rhs: Universum.Unsafe.head
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (head)'" }
-- warn: { name: "Use 'tail' from Universum.Unsafe"
-        , lhs: Data.List.tail, rhs: Universum.Unsafe.tail
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (tail)'" }
-- warn: { name: "Use 'init' from Universum.Unsafe"
-        , lhs: Data.List.init, rhs: Universum.Unsafe.init
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (init)'" }
-- warn: { name: "Use 'last' from Universum.Unsafe"
-        , lhs: Data.List.last, rhs: Universum.Unsafe.last
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (last)'" }
-- warn: { name: "Use '(!!)' from Universum.Unsafe"
-        , lhs: "Data.List.(!!)", rhs: "Universum.Unsafe.(!!)"
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe ((!!))'" }
-- warn: { name: "Use 'fromJust' from Universum.Unsafe"
-        , lhs: "Data.Maybe.fromJust", rhs: "Universum.Unsafe.fromJust"
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (fromJust)'" }
-
-############################################################################
-## Lifted functions in Universum
-############################################################################
-
-## concurrency
-
-- warn: { name: "liftIO is not needed", lhs: liftIO newEmptyMVar, rhs: Universum.newEmptyMVar
-        , note: "If you import 'newEmptyMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (newMVar x), rhs: Universum.newMVar x
-        , note: "If you import 'newMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (putMVar x y), rhs: Universum.putMVar x y
-        , note: "If you import 'putMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (readMVar x), rhs: Universum.readMVar x
-        , note: "If you import 'readMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (swapMVar x y), rhs: Universum.swapMVar x y
-        , note: "If you import 'swapMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (takeMVar x), rhs: Universum.takeMVar x
-        , note: "If you import 'takeMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (tryPutMVar x y), rhs: Universum.tryPutMVar x y
-        , note: "If you import 'tryPutMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (tryReadMVar x), rhs: Universum.tryReadMVar x
-        , note: "If you import 'tryReadMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (tryTakeMVar x), rhs: Universum.tryTakeMVar x
-        , note: "If you import 'tryTakeMVar' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (atomically x), rhs: Universum.atomically x
-        , note: "If you import 'atomically' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (newTVarIO x), rhs: Universum.newTVarIO x
-        , note: "If you import 'newTVarIO' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (readTVarIO x), rhs: Universum.readTVarIO x
-        , note: "If you import 'readTVarIO' from Universum, it's already lifted" }
-
-## IORef
-
-- warn: { name: "liftIO is not needed", lhs: liftIO (newIORef x), rhs: Universum.newIORef x
-        , note: "If you import 'newIORef' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (readIORef x), rhs: Universum.readIORef x
-        , note: "If you import 'readIORef' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (writeIORef x y), rhs: Universum.writeIORef x y
-        , note: "If you import 'writeIORef' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (modifyIORef x y), rhs: Universum.modifyIORef x y
-        , note: "If you import 'modifyIORef' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: "liftIO (modifyIORef' x y)", rhs: "Universum.modifyIORef' x y"
-        , note: "If you import 'modifyIORef'' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (atomicModifyIORef x y), rhs: Universum.atomicModifyIORef x y
-        , note: "If you import 'atomicModifyIORef' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: "liftIO (atomicModifyIORef' x y)", rhs: "Universum.atomicModifyIORef' x y"
-        , note: "If you import 'atomicModifyIORef'' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (atomicWriteIORef x y), rhs: Universum.atomicWriteIORef x y
-        , note: "If you import 'atomicWriteIORef' from Universum, it's already lifted" }
-
-## others
-
-- warn: { name: "liftIO is not needed", lhs: liftIO Universum.getLine, rhs: Universum.getLine
-        , note: "If you import 'getLine' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (Universum.readFile x), rhs: Universum.readFile x
-        , note: "If you import 'readFile' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (Universum.writeFile x y), rhs: Universum.writeFile x y
-        , note: "If you import 'writeFile' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (Universum.appendFile x y), rhs: Universum.appendFile x y
-        , note: "If you import 'appendFile' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (Universum.openFile x y), rhs: Universum.openFile x y
-        , note: "If you import 'openFile' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (exitWith x), rhs: Universum.exitWith x
-        , note: "If you import 'exitWith' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO exitFailure, rhs: Universum.exitFailure
-        , note: "If you import 'exitFailure' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO exitSuccess, rhs: Universum.exitSuccess
-        , note: "If you import 'exitSuccess' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (die x), rhs: Universum.die x
-        , note: "If you import 'die' from Universum, it's already lifted" }
-- warn: { name: "liftIO is not needed", lhs: liftIO (stToIO x), rhs: Universum.stToIO x
-        , note: "If you import 'stToIO' from Universum, it's already lifted" }
+- arguments:
+  - "-XConstraintKinds"
+  - "-XDeriveGeneric"
+  - "-XGeneralizedNewtypeDeriving"
+  - "-XLambdaCase"
+  - "-XOverloadedStrings"
+  - "-XRecordWildCards"
+  - "-XScopedTypeVariables"
+  - "-XStandaloneDeriving"
+  - "-XTupleSections"
+  - "-XTypeApplications"
+  - "-XViewPatterns"
+- ignore:
+    name: Use head
+- ignore:
+    name: Use Foldable.forM_
+- hint:
+    lhs: "pure ()"
+    note: "Use 'pass'"
+    rhs: pass
+- hint:
+    lhs: "return ()"
+    note: "Use 'pass'"
+    rhs: pass
+- hint:
+    lhs: "(: [])"
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: "(:| [])"
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.Sequence.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.Text.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.Text.Lazy.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.ByteString.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.ByteString.Lazy.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.Map.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.Map.Strict.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.HashMap.Strict.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.HashMap.Lazy.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.IntMap.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.IntMap.Strict.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.Set.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.HashSet.singleton
+    note: "Use `one`"
+    rhs: one
+- hint:
+    lhs: Data.IntSet.singleton
+    note: "Use `one`"
+    rhs: one
+- warn:
+    lhs: Control.Exception.evaluate
+    rhs: evaluateWHNF
+- warn:
+    lhs: "Control.Exception.evaluate (force x)"
+    rhs: evaluateNF x
+- warn:
+    lhs: "Control.Exception.evaluate (x `deepseq` ())"
+    rhs: evaluateNF_ x
+- warn:
+    lhs: "void (evaluateWHNF x)"
+    rhs: evaluateWHNF_ x
+- warn:
+    lhs: "void (evaluateNF x)"
+    rhs: evaluateNF_ x
+- hint:
+    lhs: Control.Exception.throw
+    note: "Use 'impureThrow'"
+    rhs: impureThrow
+- warn:
+    lhs: Data.Text.IO.readFile
+    rhs: readFileText
+- warn:
+    lhs: Data.Text.IO.writeFile
+    rhs: writeFileText
+- warn:
+    lhs: Data.Text.IO.appendFile
+    rhs: appendFileText
+- warn:
+    lhs: Data.Text.Lazy.IO.readFile
+    rhs: readFileLText
+- warn:
+    lhs: Data.Text.Lazy.IO.writeFile
+    rhs: writeFileLText
+- warn:
+    lhs: Data.Text.Lazy.IO.appendFile
+    rhs: appendFileLText
+- warn:
+    lhs: Data.ByteString.readFile
+    rhs: readFileBS
+- warn:
+    lhs: Data.ByteString.writeFile
+    rhs: writeFileBS
+- warn:
+    lhs: Data.ByteString.appendFile
+    rhs: appendFileBS
+- warn:
+    lhs: Data.ByteString.Lazy.readFile
+    rhs: readFileLBS
+- warn:
+    lhs: Data.ByteString.Lazy.writeFile
+    rhs: writeFileLBS
+- warn:
+    lhs: Data.ByteString.Lazy.appendFile
+    rhs: appendFileLBS
+- hint:
+    lhs: "foldl' (flip f)"
+    note: "Use 'flipfoldl''"
+    rhs: "flipfoldl' f"
+- warn:
+    lhs: "foldl' (+) 0"
+    rhs: sum
+- warn:
+    lhs: "foldl' (*) 1"
+    rhs: product
+- hint:
+    lhs: "fmap and (sequence s)"
+    note: Applying this hint would mean that some actions that were being executed previously would no longer be executed.
+    rhs: andM s
+- hint:
+    lhs: "and <$> sequence s"
+    note: Applying this hint would mean that some actions that were being executed previously would no longer be executed.
+    rhs: andM s
+- hint:
+    lhs: "fmap or (sequence s)"
+    note: Applying this hint would mean that some actions that were being executed previously would no longer be executed.
+    rhs: orM s
+- hint:
+    lhs: "or <$> sequence s"
+    note: Applying this hint would mean that some actions that were being executed previously would no longer be executed.
+    rhs: orM s
+- hint:
+    lhs: "fmap and (mapM f s)"
+    note: Applying this hint would mean that some actions that were being executed previously would no longer be executed.
+    rhs: allM f s
+- hint:
+    lhs: "and <$> mapM f s"
+    note: Applying this hint would mean that some actions that were being executed previously would no longer be executed.
+    rhs: allM f s
+- hint:
+    lhs: "fmap or (mapM f s)"
+    note: Applying this hint would mean that some actions that were being executed previously would no longer be executed.
+    rhs: anyM f s
+- hint:
+    lhs: "or <$> mapM f s"
+    note: Applying this hint would mean that some actions that were being executed previously would no longer be executed.
+    rhs: anyM f s
+- warn:
+    lhs: "getAlt (foldMap (Alt . f) xs)"
+    rhs: asumMap xs
+- warn:
+    lhs: "getAlt . foldMap (Alt . f)"
+    rhs: asumMap
+- hint:
+    lhs: "foldr (\\x acc -> f x <|> acc) empty"
+    note: "Use 'asumMap'"
+    rhs: asumMap f
+- hint:
+    lhs: "asum (map f xs)"
+    note: "Use 'asumMap'"
+    rhs: asumMap f xs
+- warn:
+    lhs: "map fst &&& map snd"
+    rhs: unzip
+- hint:
+    lhs: "fmap (fmap f) x"
+    note: "Use '(<<$>>)'"
+    rhs: "f <<$>> x"
+- hint:
+    lhs: "(\\f -> f x) <$> ff"
+    note: Use flap operator
+    rhs: "ff ?? x"
+- hint:
+    lhs: "fmap (\\f -> f x) ff"
+    note: Use flap operator
+    rhs: "ff ?? x"
+- hint:
+    lhs: "fmap ($ x) ff"
+    note: Use flap operator
+    rhs: "ff ?? x"
+- hint:
+    lhs: "($ x) <$> ff"
+    note: Use flap operator
+    rhs: "ff ?? x"
+- warn:
+    lhs: "fmap f (nonEmpty x)"
+    rhs: viaNonEmpty f x
+- warn:
+    lhs: fmap f . nonEmpty
+    rhs: viaNonEmpty f
+- warn:
+    lhs: "f <$> nonEmpty x"
+    rhs: viaNonEmpty f x
+- warn:
+    lhs: partitionEithers . map f
+    rhs: partitionWith f
+- warn:
+    lhs: partitionEithers $ map f x
+    rhs: partitionWith f x
+- warn:
+    lhs: "f >>= guard"
+    rhs: guardM f
+- warn:
+    lhs: guard =<< f
+    rhs: guardM f
+- warn:
+    lhs: forever
+    note: "'forever' is loosely typed and may hide errors"
+    rhs: infinitely
+- warn:
+    lhs: "whenM (not <$> x)"
+    rhs: unlessM x
+- warn:
+    lhs: "unlessM (not <$> x)"
+    rhs: whenM x
+- warn:
+    lhs: "either (const True) (const False)"
+    rhs: isLeft
+- warn:
+    lhs: "either (const False) (const True)"
+    rhs: isRight
+- warn:
+    lhs: "either id (const a)"
+    rhs: fromLeft a
+- warn:
+    lhs: "either (const b) id"
+    rhs: fromRight b
+- warn:
+    lhs: "either Just (const Nothing)"
+    rhs: leftToMaybe
+- warn:
+    lhs: "either (const Nothing) Just"
+    rhs: rightToMaybe
+- warn:
+    lhs: "maybe (Left l) Right"
+    rhs: maybeToRight l
+- warn:
+    lhs: "maybe (Right r) Left"
+    rhs: maybeToLeft r
+- warn:
+    lhs: "case m of Just x -> f x; Nothing -> pure ()"
+    rhs: whenJust m f
+- warn:
+    lhs: "case m of Just x -> f x; Nothing -> return ()"
+    rhs: whenJust m f
+- warn:
+    lhs: "case m of Just x -> f x; Nothing -> pass"
+    rhs: whenJust m f
+- warn:
+    lhs: "case m of Nothing -> pure ()  ; Just x -> f x"
+    rhs: whenJust m f
+- warn:
+    lhs: "case m of Nothing -> return (); Just x -> f x"
+    rhs: whenJust m f
+- warn:
+    lhs: "case m of Nothing -> pass     ; Just x -> f x"
+    rhs: whenJust m f
+- warn:
+    lhs: "maybe (pure ())   f m"
+    rhs: whenJust m f
+- warn:
+    lhs: "maybe (return ()) f m"
+    rhs: whenJust m f
+- warn:
+    lhs: maybe pass        f m
+    rhs: whenJust m f
+- warn:
+    lhs: "m >>= \\a -> whenJust a f"
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= \\case Just x -> f x; Nothing -> pure ()"
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= \\case Just x -> f x; Nothing -> return ()"
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= \\case Just x -> f x; Nothing -> pass"
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= \\case Nothing -> pure ()  ; Just x -> f x"
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= \\case Nothing -> return (); Just x -> f x"
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= \\case Nothing -> pass     ; Just x -> f x"
+    rhs: whenJustM m f
+- warn:
+    lhs: "maybe (pure ())   f =<< m"
+    rhs: whenJustM m f
+- warn:
+    lhs: "maybe (return ()) f =<< m"
+    rhs: whenJustM m f
+- warn:
+    lhs: maybe pass        f =<< m
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= maybe (pure ())   f"
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= maybe (return ()) f"
+    rhs: whenJustM m f
+- warn:
+    lhs: "m >>= maybe pass        f"
+    rhs: whenJustM m f
+- warn:
+    lhs: "case m of Just _ -> pure ()  ; Nothing -> x"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "case m of Just _ -> return (); Nothing -> x"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "case m of Just _ -> pass     ; Nothing -> x"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "case m of Nothing -> x; Just _ -> pure ()"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "case m of Nothing -> x; Just _ -> return ()"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "case m of Nothing -> x; Just _ -> pass"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "maybe x (\\_ -> pure ()    ) m"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "maybe x (\\_ -> return ()  ) m"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "maybe x (\\_ -> pass       ) m"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "maybe x (const (pure ()  )) m"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "maybe x (const (return ())) m"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "maybe x (const pass) m"
+    rhs: whenNothing_ m x
+- warn:
+    lhs: "m >>= \\a -> whenNothing_ a x"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= \\case Just _ -> pure ()  ; Nothing -> x"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= \\case Just _ -> return (); Nothing -> x"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= \\case Just _ -> pass     ; Nothing -> x"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= \\case Nothing -> x; Just _ -> pure ()"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= \\case Nothing -> x; Just _ -> return ()"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= \\case Nothing -> x; Just _ -> pass"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "maybe x (\\_ -> pure ()    ) =<< m"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "maybe x (\\_ -> return ()  ) =<< m"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "maybe x (\\_ -> pass       ) =<< m"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "maybe x (const (pure ()  )) =<< m"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "maybe x (const (return ())) =<< m"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "maybe x (const pass) =<< m"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= maybe x (\\_ -> pure ())"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= maybe x (\\_ -> return ())"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= maybe x (\\_ -> pass)"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= maybe x (const (pure ())  )"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= maybe x (const (return ()))"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "m >>= maybe x (const pass)"
+    rhs: whenNothingM_ m x
+- warn:
+    lhs: "whenLeft ()"
+    rhs: whenLeft_
+- warn:
+    lhs: "case m of Left x -> f x; Right _ -> pure ()"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "case m of Left x -> f x; Right _ -> return ()"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "case m of Left x -> f x; Right _ -> pass"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "case m of Right _ -> pure ()  ; Left x -> f x"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "case m of Right _ -> return (); Left x -> f x"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "case m of Right _ -> pass     ; Left x -> f x"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "either f (\\_ -> pure ()    ) m"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "either f (\\_ -> return ()  ) m"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "either f (\\_ -> pass       ) m"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "either f (const (pure ()  )) m"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "either f (const (return ())) m"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "either f (const pass) m"
+    rhs: whenLeft_ m f
+- warn:
+    lhs: "m >>= \\a -> whenLeft_ a f"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= \\case Left x -> f x; Right _ -> pure ()"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= \\case Left x -> f x; Right _ -> return ()"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= \\case Left x -> f x; Right _ -> pass"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= \\case Right _ -> pure ()  ; Left x -> f x"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= \\case Right _ -> return (); Left x -> f x"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= \\case Right _ -> pass     ; Left x -> f x"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "either f (\\_ -> pure ()    ) =<< m"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "either f (\\_ -> return ()  ) =<< m"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "either f (\\_ -> pass       ) =<< m"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "either f (const (pure ()  )) =<< m"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "either f (const (return ())) =<< m"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "either f (const pass) =<< m"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= either f (\\_ -> pure ())"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= either f (\\_ -> return ())"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= either f (\\_ -> pass)"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= either f (const (pure ())  )"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= either f (const (return ()))"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "m >>= either f (const pass)"
+    rhs: whenLeftM_ m f
+- warn:
+    lhs: "whenRight ()"
+    rhs: whenRight_
+- warn:
+    lhs: "case m of Right x -> f x; Left _ -> pure ()"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "case m of Right x -> f x; Left _ -> return ()"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "case m of Right x -> f x; Left _ -> pass"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "case m of Left _ -> pure ()  ; Right x -> f x"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "case m of Left _ -> return (); Right x -> f x"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "case m of Left _ -> pass     ; Right x -> f x"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "either (\\_ -> pure ()    ) f m"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "either (\\_ -> return ()  ) f m"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "either (\\_ -> pass       ) f m"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "either (const (pure ()  )) f m"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "either (const (return ())) f m"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "either (const pass) f m"
+    rhs: whenRight_ m f
+- warn:
+    lhs: "m >>= \\a -> whenRight_ a f"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= \\case Right x -> f x; Left _ -> pure ()  "
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= \\case Right x -> f x; Left _ -> return ()"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= \\case Right x -> f x; Left _ -> pass"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= \\case Left _ -> pure ()  ; Right x -> f x"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= \\case Left _ -> return (); Right x -> f x"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= \\case Left _ -> pass     ; Right x -> f x"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "either (\\_ -> pure ()    ) f =<< m"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "either (\\_ -> return ()  ) f =<< m"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "either (\\_ -> pass       ) f =<< m"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "either (const (pure ()  )) f =<< m"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "either (const (return ())) f =<< m"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "either (const pass) f =<< m"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= either (\\_ -> pure ())   f"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= either (\\_ -> return ()) f"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= either (\\_ -> pass)      f"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= either (const (pure ())  ) f"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= either (const (return ())) f"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "m >>= either (const pass) f"
+    rhs: whenRightM_ m f
+- warn:
+    lhs: "case m of Left x -> f x; Right _ -> pure d  "
+    rhs: whenLeft d m f
+- warn:
+    lhs: "case m of Left x -> f x; Right _ -> return d"
+    rhs: whenLeft d m f
+- warn:
+    lhs: "case m of Right _ -> pure d  ; Left x -> f x"
+    rhs: whenLeft d m f
+- warn:
+    lhs: "case m of Right _ -> return d; Left x -> f x"
+    rhs: whenLeft d m f
+- warn:
+    lhs: "either f (\\_ -> pure d    ) m"
+    rhs: whenLeft d m f
+- warn:
+    lhs: "either f (\\_ -> return d  ) m"
+    rhs: whenLeft d m f
+- warn:
+    lhs: "either f (const (pure d  )) m"
+    rhs: whenLeft d m f
+- warn:
+    lhs: "either f (const (return d)) m"
+    rhs: whenLeft d m f
+- warn:
+    lhs: "m >>= \\a -> whenLeft d a f"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "m >>= \\case Left x -> f x; Right _ -> pure d"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "m >>= \\case Left x -> f x; Right _ -> return d"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "m >>= \\case Right _ -> pure d  ; Left x -> f x"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "m >>= \\case Right _ -> return d; Left x -> f x"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "either f (\\_ -> pure d    ) =<< m"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "either f (\\_ -> return d  ) =<< m"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "either f (const (pure d  )) =<< m"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "either f (const (return d)) =<< m"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "m >>= either f (\\_ -> pure d)"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "m >>= either f (\\_ -> return d)"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "m >>= either f (const (pure d))"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "m >>= either f (const (return d))"
+    rhs: whenLeftM d m f
+- warn:
+    lhs: "case m of Right x -> f x; Left _ -> pure d"
+    rhs: whenRight d m f
+- warn:
+    lhs: "case m of Right x -> f x; Left _ -> return d"
+    rhs: whenRight d m f
+- warn:
+    lhs: "case m of Left _ -> pure d  ; Right x -> f x"
+    rhs: whenRight d m f
+- warn:
+    lhs: "case m of Left _ -> return d; Right x -> f x"
+    rhs: whenRight d m f
+- warn:
+    lhs: "either (\\_ -> pure d    ) f m"
+    rhs: whenRight d m f
+- warn:
+    lhs: "either (\\_ -> return d  ) f m"
+    rhs: whenRight d m f
+- warn:
+    lhs: "either (const (pure d  )) f m"
+    rhs: whenRight d m f
+- warn:
+    lhs: "either (const (return d)) f m"
+    rhs: whenRight d m f
+- warn:
+    lhs: "m >>= \\a -> whenRight d a f"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "m >>= \\case Right x -> f x; Left _ -> pure d"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "m >>= \\case Right x -> f x; Left _ -> return d"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "m >>= \\case Left _ -> pure d  ; Right x -> f x"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "m >>= \\case Left _ -> return d; Right x -> f x"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "either (\\_ -> pure d    ) f =<< m"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "either (\\_ -> return d  ) f =<< m"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "either (const (pure d  )) f =<< m"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "either (const (return d)) f =<< m"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "m >>= either (\\_ -> pure d)   f"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "m >>= either (\\_ -> return d) f"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "m >>= either (const (pure d)  ) f"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "m >>= either (const (return d)) f"
+    rhs: whenRightM d m f
+- warn:
+    lhs: "case m of [] -> return (); (x:xs) -> f (x :| xs)"
+    rhs: whenNotNull m f
+- warn:
+    lhs: "case m of [] -> pure ()  ; (x:xs) -> f (x :| xs)"
+    rhs: whenNotNull m f
+- warn:
+    lhs: "case m of [] -> pass     ; (x:xs) -> f (x :| xs)"
+    rhs: whenNotNull m f
+- warn:
+    lhs: "case m of (x:xs) -> f (x :| xs); [] -> return ()"
+    rhs: whenNotNull m f
+- warn:
+    lhs: "case m of (x:xs) -> f (x :| xs); [] -> pure ()  "
+    rhs: whenNotNull m f
+- warn:
+    lhs: "case m of (x:xs) -> f (x :| xs); [] -> pass     "
+    rhs: whenNotNull m f
+- warn:
+    lhs: "m >>= \\case [] -> pass     ; (x:xs) -> f (x :| xs)"
+    rhs: whenNotNullM m f
+- warn:
+    lhs: "m >>= \\case [] -> pure ()  ; (x:xs) -> f (x :| xs)"
+    rhs: whenNotNullM m f
+- warn:
+    lhs: "m >>= \\case [] -> return (); (x:xs) -> f (x :| xs)"
+    rhs: whenNotNullM m f
+- warn:
+    lhs: "m >>= \\case (x:xs) -> f (x :| xs); [] -> pass     "
+    rhs: whenNotNullM m f
+- warn:
+    lhs: "m >>= \\case (x:xs) -> f (x :| xs); [] -> pure ()  "
+    rhs: whenNotNullM m f
+- warn:
+    lhs: "m >>= \\case (x:xs) -> f (x :| xs); [] -> return ()"
+    rhs: whenNotNullM m f
+- warn:
+    lhs: mapMaybe leftToMaybe
+    rhs: lefts
+- warn:
+    lhs: mapMaybe rightToMaybe
+    rhs: rights
+- warn:
+    lhs: flip runReaderT
+    rhs: usingReaderT
+- warn:
+    lhs: flip runReader
+    rhs: usingReader
+- warn:
+    lhs: flip runStateT
+    rhs: usingStateT
+- warn:
+    lhs: flip runState
+    rhs: usingState
+- warn:
+    lhs: "fst <$> usingStateT s st"
+    rhs: evaluatingStateT s st
+- warn:
+    lhs: "fst (usingState s st)"
+    rhs: evaluatingState s st
+- warn:
+    lhs: "snd <$> usingStateT s st"
+    rhs: executingStateT s st
+- warn:
+    lhs: "snd (usingState s st)"
+    rhs: executingState s st
+- warn:
+    lhs: "MaybeT (pure m)"
+    rhs: hoistMaybe m
+- warn:
+    lhs: "MaybeT (return m)"
+    rhs: hoistMaybe m
+- warn:
+    lhs: MaybeT . pure
+    rhs: hoistMaybe
+- warn:
+    lhs: MaybeT . return
+    rhs: hoistMaybe
+- warn:
+    lhs: "ExceptT (pure m)"
+    rhs: hoistEither m
+- warn:
+    lhs: "ExceptT (return m)"
+    rhs: hoistEither m
+- warn:
+    lhs: ExceptT . pure
+    rhs: hoistEither
+- warn:
+    lhs: ExceptT . return
+    rhs: hoistEither
+- warn:
+    lhs: fromMaybe mempty
+    rhs: maybeToMonoid
+- warn:
+    lhs: "m ?: mempty"
+    rhs: maybeToMonoid m
+- warn:
+    lhs: "Data.Map.toAscList (Data.Map.fromList x)"
+    rhs: sortWith fst x
+- warn:
+    lhs: "Data.Map.toDescList (Data.Map.fromList x)"
+    rhs: "sortWith (Down . fst) x"
+- warn:
+    lhs: "Data.Set.toList (Data.Set.fromList l)"
+    rhs: sortNub l
+- warn:
+    lhs: "Data.Set.assocs (Data.Set.fromList l)"
+    rhs: sortNub l
+- warn:
+    lhs: "Data.Set.toAscList (Data.Set.fromList l)"
+    rhs: sortNub l
+- warn:
+    lhs: "Data.HashSet.toList (Data.HashSet.fromList l)"
+    rhs: unstableNub l
+- warn:
+    lhs: nub
+    note: "'nub' is O(n^2), 'ordNub' is O(n log n)"
+    rhs: ordNub
+- warn:
+    lhs: "sortBy (comparing f)"
+    note: "If the function you are using for 'comparing' is slow, use 'sortOn' instead of 'sortWith', because 'sortOn' caches applications the function and 'sortWith' doesn't."
+    rhs: sortWith f
+- warn:
+    lhs: sortOn fst
+    note: "'sortWith' will be faster here because it doesn't do caching"
+    rhs: sortWith fst
+- warn:
+    lhs: sortOn snd
+    note: "'sortWith' will be faster here because it doesn't do caching"
+    rhs: sortWith snd
+- warn:
+    lhs: "sortOn (Down . fst)"
+    note: "'sortWith' will be faster here because it doesn't do caching"
+    rhs: "sortWith (Down . fst)"
+- warn:
+    lhs: "sortOn (Down . snd)"
+    note: "'sortWith' will be faster here because it doesn't do caching"
+    rhs: "sortWith (Down . snd)"
+- warn:
+    lhs: Data.Text.IO.putStr
+    rhs: putText
+- warn:
+    lhs: Data.Text.IO.putStrLn
+    rhs: putTextLn
+- warn:
+    lhs: Data.Text.Lazy.IO.putStr
+    rhs: putLText
+- warn:
+    lhs: Data.Text.Lazy.IO.putStrLn
+    rhs: putLTextLn
+- warn:
+    lhs: Data.ByteString.Char8.putStr
+    rhs: putBS
+- warn:
+    lhs: Data.ByteString.Char8.putStrLn
+    rhs: putBSLn
+- warn:
+    lhs: Data.ByteString.Lazy.Char8.putStr
+    rhs: putLBS
+- warn:
+    lhs: Data.ByteString.Lazy.Char8.putStrLn
+    rhs: putLBSLn
+- warn:
+    lhs: Data.Text.Lazy.Text
+    rhs: LText
+- warn:
+    lhs: Data.ByteString.Lazy.ByteString
+    rhs: LByteString
+- warn:
+    lhs: Data.ByteString.UTF8.fromString
+    rhs: encodeUtf8
+- warn:
+    lhs: Data.ByteString.UTF8.toString
+    rhs: decodeUtf8
+- warn:
+    lhs: Data.Text.Encoding.encodeUtf8
+    rhs: encodeUtf8
+- warn:
+    lhs: Data.Text.Encoding.decodeUtf8
+    rhs: decodeUtf8
+- warn:
+    lhs: "Data.ByteString.Lazy.toStrict (encodeUtf8 x)"
+    rhs: encodeUtf8 x
+- warn:
+    lhs: "toStrict (encodeUtf8 x)"
+    rhs: encodeUtf8 x
+- warn:
+    lhs: "decodeUtf8 (Data.ByteString.Lazy.fromStrict x)"
+    rhs: decodeUtf8 x
+- warn:
+    lhs: "decodeUtf8 (fromStrict x)"
+    rhs: decodeUtf8 x
+- warn:
+    lhs: Data.ByteString.Lazy.UTF8.fromString
+    rhs: encodeUtf8
+- warn:
+    lhs: Data.ByteString.Lazy.UTF8.toString
+    rhs: decodeUtf8
+- warn:
+    lhs: "Data.ByteString.Lazy.fromStrict (Data.Text.Encoding.encodeUtf8 x)"
+    rhs: encodeUtf8 x
+- warn:
+    lhs: "Data.ByteString.Lazy.fromStrict (encodeUtf8 x)"
+    rhs: encodeUtf8 x
+- warn:
+    lhs: "Data.Text.Encoding.decodeUtf8 (Data.ByteString.Lazy.toStrict x)"
+    rhs: decodeUtf8 x
+- warn:
+    lhs: "Data.Text.Encoding.decodeUtf8 (toStrict x)"
+    rhs: decodeUtf8 x
+- warn:
+    lhs: "decodeUtf8 (Data.ByteString.Lazy.toStrict x)"
+    rhs: decodeUtf8 x
+- warn:
+    lhs: "decodeUtf8 (toStrict x)"
+    rhs: decodeUtf8 x
+- warn:
+    lhs: Data.Text.pack
+    rhs: toText
+- warn:
+    lhs: Data.Text.unpack
+    rhs: toString
+- warn:
+    lhs: Data.Text.Lazy.pack
+    rhs: toLText
+- warn:
+    lhs: Data.Text.Lazy.unpack
+    rhs: toString
+- warn:
+    lhs: Data.Text.Lazy.toStrict
+    rhs: toText
+- warn:
+    lhs: Data.Text.Lazy.fromStrict
+    rhs: toLText
+- warn:
+    lhs: "Data.Text.pack (show x)"
+    rhs: show x
+- warn:
+    lhs: "Data.Text.Lazy.pack (show x)"
+    rhs: show x
+- warn:
+    lhs: Data.ByteString.Lazy.fromStrict
+    rhs: fromStrict
+- warn:
+    lhs: Data.ByteString.Lazy.toStrict
+    rhs: toStrict
+- warn:
+    lhs: Data.Text.Lazy.fromStrict
+    rhs: fromStrict
+- warn:
+    lhs: Data.Text.Lazy.toStrict
+    rhs: toStrict
+- warn:
+    lhs: Control.Applicative.Alternative
+    name: "Use 'Alternative' from Relude"
+    note: "'Alternative' is already exported from Relude"
+    rhs: Alternative
+- warn:
+    lhs: Control.Applicative.empty
+    name: "Use 'empty' from Relude"
+    note: "'empty' is already exported from Relude"
+    rhs: empty
+- warn:
+    lhs: "(Control.Applicative.<|>)"
+    name: "Use '<|>' from Relude"
+    note: "Operator '(<|>)' is already exported from Relude"
+    rhs: "(<|>)"
+- warn:
+    lhs: Control.Applicative.some
+    name: "Use 'some' from Relude"
+    note: "'some' is already exported from Relude"
+    rhs: some
+- warn:
+    lhs: Control.Applicative.many
+    name: "Use 'many' from Relude"
+    note: "'many' is already exported from Relude"
+    rhs: many
+- warn:
+    lhs: Control.Applicative.Const
+    name: "Use 'Const' from Relude"
+    note: "'Const' is already exported from Relude"
+    rhs: Const
+- warn:
+    lhs: Control.Applicative.getConst
+    name: "Use 'getConst' from Relude"
+    note: "'getConst' is already exported from Relude"
+    rhs: getConst
+- warn:
+    lhs: Control.Applicative.ZipList
+    name: "Use 'ZipList' from Relude"
+    note: "'ZipList' is already exported from Relude"
+    rhs: ZipList
+- warn:
+    lhs: Control.Applicative.getZipList
+    name: "Use 'getZipList' from Relude"
+    note: "'getZipList' is already exported from Relude"
+    rhs: getZipList
+- warn:
+    lhs: Control.Applicative.liftA2
+    name: "Use 'liftA2' from Relude"
+    note: "'liftA2' is already exported from Relude"
+    rhs: liftA2
+- warn:
+    lhs: Control.Applicative.liftA3
+    name: "Use 'liftA3' from Relude"
+    note: "'liftA3' is already exported from Relude"
+    rhs: liftA3
+- warn:
+    lhs: Control.Applicative.optional
+    name: "Use 'optional' from Relude"
+    note: "'optional' is already exported from Relude"
+    rhs: optional
+- warn:
+    lhs: "(Control.Applicative.<**>)"
+    name: "Use '<**>' from Relude"
+    note: "Operator '(<**>)' is already exported from Relude"
+    rhs: "(<**>)"
+- warn:
+    lhs: Data.Bits.xor
+    name: "Use 'xor' from Relude"
+    note: "'xor' is already exported from Relude"
+    rhs: xor
+- warn:
+    lhs: Data.Char.chr
+    name: "Use 'chr' from Relude"
+    note: "'chr' is already exported from Relude"
+    rhs: chr
+- warn:
+    lhs: Data.Int.Int8
+    name: "Use 'Int8' from Relude"
+    note: "'Int8' is already exported from Relude"
+    rhs: Int8
+- warn:
+    lhs: Data.Int.Int16
+    name: "Use 'Int16' from Relude"
+    note: "'Int16' is already exported from Relude"
+    rhs: Int16
+- warn:
+    lhs: Data.Int.Int32
+    name: "Use 'Int32' from Relude"
+    note: "'Int32' is already exported from Relude"
+    rhs: Int32
+- warn:
+    lhs: Data.Int.Int64
+    name: "Use 'Int64' from Relude"
+    note: "'Int64' is already exported from Relude"
+    rhs: Int64
+- warn:
+    lhs: Data.Word.Word8
+    name: "Use 'Word8' from Relude"
+    note: "'Word8' is already exported from Relude"
+    rhs: Word8
+- warn:
+    lhs: Data.Word.Word16
+    name: "Use 'Word16' from Relude"
+    note: "'Word16' is already exported from Relude"
+    rhs: Word16
+- warn:
+    lhs: Data.Word.Word32
+    name: "Use 'Word32' from Relude"
+    note: "'Word32' is already exported from Relude"
+    rhs: Word32
+- warn:
+    lhs: Data.Word.Word64
+    name: "Use 'Word64' from Relude"
+    note: "'Word64' is already exported from Relude"
+    rhs: Word64
+- warn:
+    lhs: Data.Word.byteSwap16
+    name: "Use 'byteSwap16' from Relude"
+    note: "'byteSwap16' is already exported from Relude"
+    rhs: byteSwap16
+- warn:
+    lhs: Data.Word.byteSwap32
+    name: "Use 'byteSwap32' from Relude"
+    note: "'byteSwap32' is already exported from Relude"
+    rhs: byteSwap32
+- warn:
+    lhs: Data.Word.byteSwap64
+    name: "Use 'byteSwap64' from Relude"
+    note: "'byteSwap64' is already exported from Relude"
+    rhs: byteSwap64
+- warn:
+    lhs: Numeric.Natural.Natural
+    name: "Use 'Natural' from Relude"
+    note: "'Natural' is already exported from Relude"
+    rhs: Natural
+- warn:
+    lhs: System.IO.IOMode
+    name: "Use 'IOMode' from Relude"
+    note: "'IOMode' is already exported from Relude"
+    rhs: IOMode
+- warn:
+    lhs: System.IO.ReadMode
+    name: "Use 'ReadMode' from Relude"
+    note: "'ReadMode' is already exported from Relude"
+    rhs: ReadMode
+- warn:
+    lhs: System.IO.WriteMode
+    name: "Use 'WriteMode' from Relude"
+    note: "'WriteMode' is already exported from Relude"
+    rhs: WriteMode
+- warn:
+    lhs: System.IO.AppendMode
+    name: "Use 'AppendMode' from Relude"
+    note: "'AppendMode' is already exported from Relude"
+    rhs: AppendMode
+- warn:
+    lhs: System.IO.ReadWriteMode
+    name: "Use 'ReadWriteMode' from Relude"
+    note: "'ReadWriteMode' is already exported from Relude"
+    rhs: ReadWriteMode
+- warn:
+    lhs: Data.Ord.Down
+    name: "Use 'Down' from Relude"
+    note: "'Down' is already exported from Relude"
+    rhs: Down
+- warn:
+    lhs: Data.Ord.comparing
+    name: "Use 'comparing' from Relude"
+    note: "'comparing' is already exported from Relude"
+    rhs: comparing
+- warn:
+    lhs: Data.Coerce.Coercible
+    name: "Use 'Coercible' from Relude"
+    note: "'Coercible' is already exported from Relude"
+    rhs: Coercible
+- warn:
+    lhs: Data.Coerce.coerce
+    name: "Use 'coerce' from Relude"
+    note: "'coerce' is already exported from Relude"
+    rhs: coerce
+- warn:
+    lhs: Data.Kind.Constraint
+    name: "Use 'Constraint' from Relude"
+    note: "'Constraint' is already exported from Relude"
+    rhs: Constraint
+- warn:
+    lhs: Data.Kind.Type
+    name: "Use 'Type' from Relude"
+    note: "'Type' is already exported from Relude"
+    rhs: Type
+- warn:
+    lhs: Data.Typeable.Typeable
+    name: "Use 'Typeable' from Relude"
+    note: "'Typeable' is already exported from Relude"
+    rhs: Typeable
+- warn:
+    lhs: Data.Proxy.Proxy
+    name: "Use 'Proxy' from Relude"
+    note: "'Proxy' is already exported from Relude"
+    rhs: Proxy
+- warn:
+    lhs: Data.Typeable.Typeable
+    name: "Use 'Typeable' from Relude"
+    note: "'Typeable' is already exported from Relude"
+    rhs: Typeable
+- warn:
+    lhs: Data.Void.Void
+    name: "Use 'Void' from Relude"
+    note: "'Void' is already exported from Relude"
+    rhs: Void
+- warn:
+    lhs: Data.Void.absurd
+    name: "Use 'absurd' from Relude"
+    note: "'absurd' is already exported from Relude"
+    rhs: absurd
+- warn:
+    lhs: Data.Void.vacuous
+    name: "Use 'vacuous' from Relude"
+    note: "'vacuous' is already exported from Relude"
+    rhs: vacuous
+- warn:
+    lhs: Data.Base.maxInt
+    name: "Use 'maxInt' from Relude"
+    note: "'maxInt' is already exported from Relude"
+    rhs: maxInt
+- warn:
+    lhs: Data.Base.minInt
+    name: "Use 'minInt' from Relude"
+    note: "'minInt' is already exported from Relude"
+    rhs: minInt
+- warn:
+    lhs: Data.Base.ord
+    name: "Use 'ord' from Relude"
+    note: "'ord' is already exported from Relude"
+    rhs: ord
+- warn:
+    lhs: GHC.Enum.boundedEnumFrom
+    name: "Use 'boundedEnumFrom' from Relude"
+    note: "'boundedEnumFrom' is already exported from Relude"
+    rhs: boundedEnumFrom
+- warn:
+    lhs: GHC.Enum.boundedEnumFromThen
+    name: "Use 'boundedEnumFromThen' from Relude"
+    note: "'boundedEnumFromThen' is already exported from Relude"
+    rhs: boundedEnumFromThen
+- warn:
+    lhs: GHC.Generics.Generic
+    name: "Use 'Generic' from Relude"
+    note: "'Generic' is already exported from Relude"
+    rhs: Generic
+- warn:
+    lhs: GHC.Real.Ratio
+    name: "Use 'Ratio' from Relude"
+    note: "'Ratio' is already exported from Relude"
+    rhs: Ratio
+- warn:
+    lhs: GHC.Real.Rational
+    name: "Use 'Rational' from Relude"
+    note: "'Rational' is already exported from Relude"
+    rhs: Rational
+- warn:
+    lhs: GHC.Real.denominator
+    name: "Use 'denominator' from Relude"
+    note: "'denominator' is already exported from Relude"
+    rhs: denominator
+- warn:
+    lhs: GHC.Real.numerator
+    name: "Use 'numerator' from Relude"
+    note: "'numerator' is already exported from Relude"
+    rhs: numerator
+- warn:
+    lhs: GHC.TypeNats.CmpNat
+    name: "Use 'CmpNat' from Relude"
+    note: "'CmpNat' is already exported from Relude"
+    rhs: CmpNat
+- warn:
+    lhs: GHC.TypeNats.KnownNat
+    name: "Use 'KnownNat' from Relude"
+    note: "'KnownNat' is already exported from Relude"
+    rhs: KnownNat
+- warn:
+    lhs: GHC.TypeNats.Nat
+    name: "Use 'Nat' from Relude"
+    note: "'Nat' is already exported from Relude"
+    rhs: Nat
+- warn:
+    lhs: GHC.TypeNats.SomeNat
+    name: "Use 'SomeNat' from Relude"
+    note: "'SomeNat' is already exported from Relude"
+    rhs: SomeNat
+- warn:
+    lhs: GHC.TypeNats.natVal
+    name: "Use 'natVal' from Relude"
+    note: "'natVal' is already exported from Relude"
+    rhs: natVal
+- warn:
+    lhs: GHC.TypeNats.someNatVal
+    name: "Use 'someNatVal' from Relude"
+    note: "'someNatVal' is already exported from Relude"
+    rhs: someNatVal
+- warn:
+    lhs: GHC.TypeLits.CmpNat
+    name: "Use 'CmpNat' from Relude"
+    note: "'CmpNat' is already exported from Relude"
+    rhs: CmpNat
+- warn:
+    lhs: GHC.TypeLits.KnownNat
+    name: "Use 'KnownNat' from Relude"
+    note: "'KnownNat' is already exported from Relude"
+    rhs: KnownNat
+- warn:
+    lhs: GHC.TypeLits.Nat
+    name: "Use 'Nat' from Relude"
+    note: "'Nat' is already exported from Relude"
+    rhs: Nat
+- warn:
+    lhs: GHC.TypeLits.SomeNat
+    name: "Use 'SomeNat' from Relude"
+    note: "'SomeNat' is already exported from Relude"
+    rhs: SomeNat
+- warn:
+    lhs: GHC.TypeLits.natVal
+    name: "Use 'natVal' from Relude"
+    note: "'natVal' is already exported from Relude"
+    rhs: natVal
+- warn:
+    lhs: GHC.TypeLits.someNatVal
+    name: "Use 'someNatVal' from Relude"
+    note: "'someNatVal' is already exported from Relude"
+    rhs: someNatVal
+- warn:
+    lhs: GHC.ExecutionStack.getStackTrace
+    name: "Use 'getStackTrace' from Relude"
+    note: "'getStackTrace' is already exported from Relude"
+    rhs: getStackTrace
+- warn:
+    lhs: GHC.ExecutionStack.showStackTrace
+    name: "Use 'showStackTrace' from Relude"
+    note: "'showStackTrace' is already exported from Relude"
+    rhs: showStackTrace
+- warn:
+    lhs: GHC.OverloadedLabels.IsLabel
+    name: "Use 'IsLabel' from Relude"
+    note: "'IsLabel' is already exported from Relude"
+    rhs: IsLabel
+- warn:
+    lhs: GHC.OverloadedLabels.fromLabel
+    name: "Use 'fromLabel' from Relude"
+    note: "'fromLabel' is already exported from Relude"
+    rhs: fromLabel
+- warn:
+    lhs: GHC.Stack.CallStack
+    name: "Use 'CallStack' from Relude"
+    note: "'CallStack' is already exported from Relude"
+    rhs: CallStack
+- warn:
+    lhs: GHC.Stack.HasCallStack
+    name: "Use 'HasCallStack' from Relude"
+    note: "'HasCallStack' is already exported from Relude"
+    rhs: HasCallStack
+- warn:
+    lhs: GHC.Stack.callStack
+    name: "Use 'callStack' from Relude"
+    note: "'callStack' is already exported from Relude"
+    rhs: callStack
+- warn:
+    lhs: GHC.Stack.currentCallStack
+    name: "Use 'currentCallStack' from Relude"
+    note: "'currentCallStack' is already exported from Relude"
+    rhs: currentCallStack
+- warn:
+    lhs: GHC.Stack.getCallStack
+    name: "Use 'getCallStack' from Relude"
+    note: "'getCallStack' is already exported from Relude"
+    rhs: getCallStack
+- warn:
+    lhs: GHC.Stack.prettyCallStack
+    name: "Use 'prettyCallStack' from Relude"
+    note: "'prettyCallStack' is already exported from Relude"
+    rhs: prettyCallStack
+- warn:
+    lhs: GHC.Stack.prettySrcLoc
+    name: "Use 'prettySrcLoc' from Relude"
+    note: "'prettySrcLoc' is already exported from Relude"
+    rhs: prettySrcLoc
+- warn:
+    lhs: GHC.Stack.withFrozenCallStack
+    name: "Use 'withFrozenCallStack' from Relude"
+    note: "'withFrozenCallStack' is already exported from Relude"
+    rhs: withFrozenCallStack
+- warn:
+    lhs: Data.Bifoldable.Bifoldable
+    name: "Use 'Bifoldable' from Relude"
+    note: "'Bifoldable' is already exported from Relude"
+    rhs: Bifoldable
+- warn:
+    lhs: Data.Bifoldable.bifold
+    name: "Use 'bifold' from Relude"
+    note: "'bifold' is already exported from Relude"
+    rhs: bifold
+- warn:
+    lhs: Data.Bifoldable.bifoldMap
+    name: "Use 'bifoldMap' from Relude"
+    note: "'bifoldMap' is already exported from Relude"
+    rhs: bifoldMap
+- warn:
+    lhs: Data.Bifoldable.bifoldr
+    name: "Use 'bifoldr' from Relude"
+    note: "'bifoldr' is already exported from Relude"
+    rhs: bifoldr
+- warn:
+    lhs: Data.Bifoldable.bifoldl
+    name: "Use 'bifoldl' from Relude"
+    note: "'bifoldl' is already exported from Relude"
+    rhs: bifoldl
+- warn:
+    lhs: "Data.Bifoldable.bifoldl'"
+    name: "Use 'bifoldl'' from Relude"
+    note: "'bifoldl'' is already exported from Relude"
+    rhs: "bifoldl'"
+- warn:
+    lhs: Data.Bifoldable.bifoldlM
+    name: "Use 'bifoldlM' from Relude"
+    note: "'bifoldlM' is already exported from Relude"
+    rhs: bifoldlM
+- warn:
+    lhs: "Data.Bifoldable.bifoldr'"
+    name: "Use 'bifoldr'' from Relude"
+    note: "'bifoldr'' is already exported from Relude"
+    rhs: "bifoldr'"
+- warn:
+    lhs: Data.Bifoldable.bifoldrM
+    name: "Use 'bifoldrM' from Relude"
+    note: "'bifoldrM' is already exported from Relude"
+    rhs: bifoldrM
+- warn:
+    lhs: Data.Bifoldable.bitraverse_
+    name: "Use 'bitraverse_' from Relude"
+    note: "'bitraverse_' is already exported from Relude"
+    rhs: bitraverse_
+- warn:
+    lhs: Data.Bifoldable.bifor_
+    name: "Use 'bifor_' from Relude"
+    note: "'bifor_' is already exported from Relude"
+    rhs: bifor_
+- warn:
+    lhs: Data.Bifoldable.biasum
+    name: "Use 'biasum' from Relude"
+    note: "'biasum' is already exported from Relude"
+    rhs: biasum
+- warn:
+    lhs: Data.Bifoldable.bisequence_
+    name: "Use 'bisequence_' from Relude"
+    note: "'bisequence_' is already exported from Relude"
+    rhs: bisequence_
+- warn:
+    lhs: Data.Bifoldable.biList
+    name: "Use 'biList' from Relude"
+    note: "'biList' is already exported from Relude"
+    rhs: biList
+- warn:
+    lhs: Data.Bifoldable.binull
+    name: "Use 'binull' from Relude"
+    note: "'binull' is already exported from Relude"
+    rhs: binull
+- warn:
+    lhs: Data.Bifoldable.bilength
+    name: "Use 'bilength' from Relude"
+    note: "'bilength' is already exported from Relude"
+    rhs: bilength
+- warn:
+    lhs: Data.Bifoldable.bielem
+    name: "Use 'bielem' from Relude"
+    note: "'bielem' is already exported from Relude"
+    rhs: bielem
+- warn:
+    lhs: Data.Bifoldable.biand
+    name: "Use 'biand' from Relude"
+    note: "'biand' is already exported from Relude"
+    rhs: biand
+- warn:
+    lhs: Data.Bifoldable.bior
+    name: "Use 'bior' from Relude"
+    note: "'bior' is already exported from Relude"
+    rhs: bior
+- warn:
+    lhs: Data.Bifoldable.biany
+    name: "Use 'biany' from Relude"
+    note: "'biany' is already exported from Relude"
+    rhs: biany
+- warn:
+    lhs: Data.Bifoldable.biall
+    name: "Use 'biall' from Relude"
+    note: "'biall' is already exported from Relude"
+    rhs: biall
+- warn:
+    lhs: Data.Bifoldable.bifind
+    name: "Use 'bifind' from Relude"
+    note: "'bifind' is already exported from Relude"
+    rhs: bifind
+- warn:
+    lhs: Data.Bitraversable.Bitraversable
+    name: "Use 'Bitraversable' from Relude"
+    note: "'Bitraversable' is already exported from Relude"
+    rhs: Bitraversable
+- warn:
+    lhs: Data.Bitraversable.bitraverse
+    name: "Use 'bitraverse' from Relude"
+    note: "'bitraverse' is already exported from Relude"
+    rhs: bitraverse
+- warn:
+    lhs: Data.Bitraversable.bisequence
+    name: "Use 'bisequence' from Relude"
+    note: "'bisequence' is already exported from Relude"
+    rhs: bisequence
+- warn:
+    lhs: Data.Bitraversable.bifor
+    name: "Use 'bifor' from Relude"
+    note: "'bifor' is already exported from Relude"
+    rhs: bifor
+- warn:
+    lhs: Data.Bitraversable.bimapDefault
+    name: "Use 'bimapDefault' from Relude"
+    note: "'bimapDefault' is already exported from Relude"
+    rhs: bimapDefault
+- warn:
+    lhs: Data.Bitraversable.bifoldMapDefault
+    name: "Use 'bifoldMapDefault' from Relude"
+    note: "'bifoldMapDefault' is already exported from Relude"
+    rhs: bifoldMapDefault
+- warn:
+    lhs: Control.Monad.guard
+    name: "Use 'guard' from Relude"
+    note: "'guard' is already exported from Relude"
+    rhs: guard
+- warn:
+    lhs: Control.Monad.unless
+    name: "Use 'unless' from Relude"
+    note: "'unless' is already exported from Relude"
+    rhs: unless
+- warn:
+    lhs: Control.Monad.when
+    name: "Use 'when' from Relude"
+    note: "'when' is already exported from Relude"
+    rhs: when
+- warn:
+    lhs: Data.Bool.bool
+    name: "Use 'bool' from Relude"
+    note: "'bool' is already exported from Relude"
+    rhs: bool
+- warn:
+    lhs: Data.Hashable.Hashable
+    name: "Use 'Hashable' from Relude"
+    note: "'Hashable' is already exported from Relude"
+    rhs: Hashable
+- warn:
+    lhs: Data.Hashable.hashWithSalt
+    name: "Use 'hashWithSalt' from Relude"
+    note: "'hashWithSalt' is already exported from Relude"
+    rhs: hashWithSalt
+- warn:
+    lhs: Data.HashMap.Strict.HashMap
+    name: "Use 'HashMap' from Relude"
+    note: "'HashMap' is already exported from Relude"
+    rhs: HashMap
+- warn:
+    lhs: Data.HashSet.HashSet
+    name: "Use 'HashSet' from Relude"
+    note: "'HashSet' is already exported from Relude"
+    rhs: HashSet
+- warn:
+    lhs: Data.IntMap.Strict.IntMap
+    name: "Use 'IntMap' from Relude"
+    note: "'IntMap' is already exported from Relude"
+    rhs: IntMap
+- warn:
+    lhs: Data.IntSet.IntSet
+    name: "Use 'IntSet' from Relude"
+    note: "'IntSet' is already exported from Relude"
+    rhs: IntSet
+- warn:
+    lhs: Data.Map.Strict.Map
+    name: "Use 'Map' from Relude"
+    note: "'Map' is already exported from Relude"
+    rhs: Map
+- warn:
+    lhs: Data.Sequence.Sequence
+    name: "Use 'Sequence' from Relude"
+    note: "'Sequence' is already exported from Relude"
+    rhs: Sequence
+- warn:
+    lhs: Data.Set.Set
+    name: "Use 'Set' from Relude"
+    note: "'Set' is already exported from Relude"
+    rhs: Set
+- warn:
+    lhs: Data.Tuple.swap
+    name: "Use 'swap' from Relude"
+    note: "'swap' is already exported from Relude"
+    rhs: swap
+- warn:
+    lhs: Data.Vector.Vector
+    name: "Use 'Vector' from Relude"
+    note: "'Vector' is already exported from Relude"
+    rhs: Vector
+- warn:
+    lhs: GHC.Exts.IsList
+    name: "Use 'IsList' from Relude"
+    note: "'IsList' is already exported from Relude"
+    rhs: IsList
+- warn:
+    lhs: GHC.Exts.fromList
+    name: "Use 'fromList' from Relude"
+    note: "'fromList' is already exported from Relude"
+    rhs: fromList
+- warn:
+    lhs: GHC.Exts.fromListN
+    name: "Use 'fromListN' from Relude"
+    note: "'fromListN' is already exported from Relude"
+    rhs: fromListN
+- warn:
+    lhs: Debug.Trace.trace
+    name: "Use 'trace' from Relude"
+    note: "'trace' is already exported from Relude"
+    rhs: trace
+- warn:
+    lhs: Debug.Trace.traceShow
+    name: "Use 'traceShow' from Relude"
+    note: "'traceShow' is already exported from Relude"
+    rhs: traceShow
+- warn:
+    lhs: Debug.Trace.traceShowId
+    name: "Use 'traceShowId' from Relude"
+    note: "'traceShowId' is already exported from Relude"
+    rhs: traceShowId
+- warn:
+    lhs: Debug.Trace.traceShowM
+    name: "Use 'traceShowM' from Relude"
+    note: "'traceShowM' is already exported from Relude"
+    rhs: traceShowM
+- warn:
+    lhs: Debug.Trace.traceM
+    name: "Use 'traceM' from Relude"
+    note: "'traceM' is already exported from Relude"
+    rhs: traceM
+- warn:
+    lhs: Debug.Trace.traceId
+    name: "Use 'traceId' from Relude"
+    note: "'traceId' is already exported from Relude"
+    rhs: traceId
+- warn:
+    lhs: Control.DeepSeq.NFData
+    name: "Use 'NFData' from Relude"
+    note: "'NFData' is already exported from Relude"
+    rhs: NFData
+- warn:
+    lhs: Control.DeepSeq.rnf
+    name: "Use 'rnf' from Relude"
+    note: "'rnf' is already exported from Relude"
+    rhs: rnf
+- warn:
+    lhs: Control.DeepSeq.deepseq
+    name: "Use 'deepseq' from Relude"
+    note: "'deepseq' is already exported from Relude"
+    rhs: deepseq
+- warn:
+    lhs: Control.DeepSeq.force
+    name: "Use 'force' from Relude"
+    note: "'force' is already exported from Relude"
+    rhs: force
+- warn:
+    lhs: "(Control.DeepSeq.$!!)"
+    name: "Use '$!!' from Relude"
+    note: "Operator '($!!)' is already exported from Relude"
+    rhs: "($!!)"
+- warn:
+    lhs: Control.Exception.Exception
+    name: "Use 'Exception' from Relude"
+    note: "'Exception' is already exported from Relude"
+    rhs: Exception
+- warn:
+    lhs: Control.Exception.SomeException
+    name: "Use 'SomeException' from Relude"
+    note: "'SomeException' is already exported from Relude"
+    rhs: SomeException
+- warn:
+    lhs: Control.Exception.toException
+    name: "Use 'toException' from Relude"
+    note: "'toException' is already exported from Relude"
+    rhs: toException
+- warn:
+    lhs: Control.Exception.fromException
+    name: "Use 'fromException' from Relude"
+    note: "'fromException' is already exported from Relude"
+    rhs: fromException
+- warn:
+    lhs: Control.Exception.displayException
+    name: "Use 'displayException' from Relude"
+    note: "'displayException' is already exported from Relude"
+    rhs: displayException
+- warn:
+    lhs: Data.Foldable.asum
+    name: "Use 'asum' from Relude"
+    note: "'asum' is already exported from Relude"
+    rhs: asum
+- warn:
+    lhs: Data.Foldable.find
+    name: "Use 'find' from Relude"
+    note: "'find' is already exported from Relude"
+    rhs: find
+- warn:
+    lhs: Data.Foldable.find
+    name: "Use 'find' from Relude"
+    note: "'find' is already exported from Relude"
+    rhs: find
+- warn:
+    lhs: Data.Foldable.fold
+    name: "Use 'fold' from Relude"
+    note: "'fold' is already exported from Relude"
+    rhs: fold
+- warn:
+    lhs: "Data.Foldable.foldl'"
+    name: "Use 'foldl'' from Relude"
+    note: "'foldl'' is already exported from Relude"
+    rhs: "foldl'"
+- warn:
+    lhs: Data.Foldable.forM_
+    name: "Use 'forM_' from Relude"
+    note: "'forM_' is already exported from Relude"
+    rhs: forM_
+- warn:
+    lhs: Data.Foldable.for_
+    name: "Use 'for_' from Relude"
+    note: "'for_' is already exported from Relude"
+    rhs: for_
+- warn:
+    lhs: Data.Foldable.sequenceA_
+    name: "Use 'sequenceA_' from Relude"
+    note: "'sequenceA_' is already exported from Relude"
+    rhs: sequenceA_
+- warn:
+    lhs: Data.Foldable.toList
+    name: "Use 'toList' from Relude"
+    note: "'toList' is already exported from Relude"
+    rhs: toList
+- warn:
+    lhs: Data.Foldable.traverse_
+    name: "Use 'traverse_' from Relude"
+    note: "'traverse_' is already exported from Relude"
+    rhs: traverse_
+- warn:
+    lhs: Data.Traversable.forM
+    name: "Use 'forM' from Relude"
+    note: "'forM' is already exported from Relude"
+    rhs: forM
+- warn:
+    lhs: Data.Traversable.mapAccumL
+    name: "Use 'mapAccumL' from Relude"
+    note: "'mapAccumL' is already exported from Relude"
+    rhs: mapAccumL
+- warn:
+    lhs: Data.Traversable.mapAccumR
+    name: "Use 'mapAccumR' from Relude"
+    note: "'mapAccumR' is already exported from Relude"
+    rhs: mapAccumR
+- warn:
+    lhs: "(Control.Arrow.&&&)"
+    name: "Use '&&&' from Relude"
+    note: "Operator '(&&&)' is already exported from Relude"
+    rhs: "(&&&)"
+- warn:
+    lhs: "(Control.Category.>>>)"
+    name: "Use '>>>' from Relude"
+    note: "Operator '(>>>)' is already exported from Relude"
+    rhs: "(>>>)"
+- warn:
+    lhs: "(Control.Category.<<<)"
+    name: "Use '<<<' from Relude"
+    note: "Operator '(<<<)' is already exported from Relude"
+    rhs: "(<<<)"
+- warn:
+    lhs: Data.Function.fix
+    name: "Use 'fix' from Relude"
+    note: "'fix' is already exported from Relude"
+    rhs: fix
+- warn:
+    lhs: Data.Function.on
+    name: "Use 'on' from Relude"
+    note: "'on' is already exported from Relude"
+    rhs: 'on'
+- warn:
+    lhs: Data.Bifunctor.Bifunctor
+    name: "Use 'Bifunctor' from Relude"
+    note: "'Bifunctor' is already exported from Relude"
+    rhs: Bifunctor
+- warn:
+    lhs: Data.Bifunctor.bimap
+    name: "Use 'bimap' from Relude"
+    note: "'bimap' is already exported from Relude"
+    rhs: bimap
+- warn:
+    lhs: Data.Bifunctor.first
+    name: "Use 'first' from Relude"
+    note: "'first' is already exported from Relude"
+    rhs: first
+- warn:
+    lhs: Data.Bifunctor.second
+    name: "Use 'second' from Relude"
+    note: "'second' is already exported from Relude"
+    rhs: second
+- warn:
+    lhs: Data.Functor.void
+    name: "Use 'void' from Relude"
+    note: "'void' is already exported from Relude"
+    rhs: void
+- warn:
+    lhs: "(Data.Functor.$>)"
+    name: "Use '$>' from Relude"
+    note: "Operator '($>)' is already exported from Relude"
+    rhs: "($>)"
+- warn:
+    lhs: "(Data.Functor.<&>)"
+    name: "Use '<&>' from Relude"
+    note: "Operator '(<&>)' is already exported from Relude"
+    rhs: "(<&>)"
+- warn:
+    lhs: Data.Functor.Compose.Compose
+    name: "Use 'Compose' from Relude"
+    note: "'Compose' is already exported from Relude"
+    rhs: Compose
+- warn:
+    lhs: Data.Functor.Compose.getCompose
+    name: "Use 'getCompose' from Relude"
+    note: "'getCompose' is already exported from Relude"
+    rhs: getCompose
+- warn:
+    lhs: Data.Functor.Identity.Identity
+    name: "Use 'Identity' from Relude"
+    note: "'Identity' is already exported from Relude"
+    rhs: Identity
+- warn:
+    lhs: Data.Functor.Identity.runIdentity
+    name: "Use 'runIdentity' from Relude"
+    note: "'runIdentity' is already exported from Relude"
+    rhs: runIdentity
+- warn:
+    lhs: Control.Concurrent.MVar.MVar
+    name: "Use 'MVar' from Relude"
+    note: "'MVar' is already exported from Relude"
+    rhs: MVar
+- warn:
+    lhs: Control.Concurrent.MVar.newEmptyMVar
+    name: "Use 'newEmptyMVar' from Relude"
+    note: "'newEmptyMVar' is already exported from Relude"
+    rhs: newEmptyMVar
+- warn:
+    lhs: Control.Concurrent.MVar.newMVar
+    name: "Use 'newMVar' from Relude"
+    note: "'newMVar' is already exported from Relude"
+    rhs: newMVar
+- warn:
+    lhs: Control.Concurrent.MVar.putMVar
+    name: "Use 'putMVar' from Relude"
+    note: "'putMVar' is already exported from Relude"
+    rhs: putMVar
+- warn:
+    lhs: Control.Concurrent.MVar.readMVar
+    name: "Use 'readMVar' from Relude"
+    note: "'readMVar' is already exported from Relude"
+    rhs: readMVar
+- warn:
+    lhs: Control.Concurrent.MVar.swapMVar
+    name: "Use 'swapMVar' from Relude"
+    note: "'swapMVar' is already exported from Relude"
+    rhs: swapMVar
+- warn:
+    lhs: Control.Concurrent.MVar.takeMVar
+    name: "Use 'takeMVar' from Relude"
+    note: "'takeMVar' is already exported from Relude"
+    rhs: takeMVar
+- warn:
+    lhs: Control.Concurrent.MVar.tryPutMVar
+    name: "Use 'tryPutMVar' from Relude"
+    note: "'tryPutMVar' is already exported from Relude"
+    rhs: tryPutMVar
+- warn:
+    lhs: Control.Concurrent.MVar.tryReadMVar
+    name: "Use 'tryReadMVar' from Relude"
+    note: "'tryReadMVar' is already exported from Relude"
+    rhs: tryReadMVar
+- warn:
+    lhs: Control.Concurrent.MVar.tryTakeMVar
+    name: "Use 'tryTakeMVar' from Relude"
+    note: "'tryTakeMVar' is already exported from Relude"
+    rhs: tryTakeMVar
+- warn:
+    lhs: Control.Monad.STM.STM
+    name: "Use 'STM' from Relude"
+    note: "'STM' is already exported from Relude"
+    rhs: STM
+- warn:
+    lhs: Control.Monad.STM.atomically
+    name: "Use 'atomically' from Relude"
+    note: "'atomically' is already exported from Relude"
+    rhs: atomically
+- warn:
+    lhs: Control.Monad.STM.throwSTM
+    name: "Use 'throwSTM' from Relude"
+    note: "'throwSTM' is already exported from Relude"
+    rhs: throwSTM
+- warn:
+    lhs: Control.Monad.STM.catchSTM
+    name: "Use 'catchSTM' from Relude"
+    note: "'catchSTM' is already exported from Relude"
+    rhs: catchSTM
+- warn:
+    lhs: Control.Concurrent.STM.TVar.TVar
+    name: "Use 'TVar' from Relude"
+    note: "'TVar' is already exported from Relude"
+    rhs: TVar
+- warn:
+    lhs: Control.Concurrent.STM.TVar.newTVarIO
+    name: "Use 'newTVarIO' from Relude"
+    note: "'newTVarIO' is already exported from Relude"
+    rhs: newTVarIO
+- warn:
+    lhs: Control.Concurrent.STM.TVar.readTVarIO
+    name: "Use 'readTVarIO' from Relude"
+    note: "'readTVarIO' is already exported from Relude"
+    rhs: readTVarIO
+- warn:
+    lhs: "Control.Concurrent.STM.TVar.modifyTVar'"
+    name: "Use 'modifyTVar'' from Relude"
+    note: "'modifyTVar'' is already exported from Relude"
+    rhs: "modifyTVar'"
+- warn:
+    lhs: Control.Concurrent.STM.TVar.newTVar
+    name: "Use 'newTVar' from Relude"
+    note: "'newTVar' is already exported from Relude"
+    rhs: newTVar
+- warn:
+    lhs: Control.Concurrent.STM.TVar.readTVar
+    name: "Use 'readTVar' from Relude"
+    note: "'readTVar' is already exported from Relude"
+    rhs: readTVar
+- warn:
+    lhs: Control.Concurrent.STM.TVar.writeTVar
+    name: "Use 'writeTVar' from Relude"
+    note: "'writeTVar' is already exported from Relude"
+    rhs: writeTVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.TMVar
+    name: "Use 'TMVar' from Relude"
+    note: "'TMVar' is already exported from Relude"
+    rhs: TMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.newTMVar
+    name: "Use 'newTMVar' from Relude"
+    note: "'newTMVar' is already exported from Relude"
+    rhs: newTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.newEmptyTMVar
+    name: "Use 'newEmptyTMVar' from Relude"
+    note: "'newEmptyTMVar' is already exported from Relude"
+    rhs: newEmptyTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.newTMVarIO
+    name: "Use 'newTMVarIO' from Relude"
+    note: "'newTMVarIO' is already exported from Relude"
+    rhs: newTMVarIO
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.newEmptyTMVarIO
+    name: "Use 'newEmptyTMVarIO' from Relude"
+    note: "'newEmptyTMVarIO' is already exported from Relude"
+    rhs: newEmptyTMVarIO
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.takeTMVar
+    name: "Use 'takeTMVar' from Relude"
+    note: "'takeTMVar' is already exported from Relude"
+    rhs: takeTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.putTMVar
+    name: "Use 'putTMVar' from Relude"
+    note: "'putTMVar' is already exported from Relude"
+    rhs: putTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.readTMVar
+    name: "Use 'readTMVar' from Relude"
+    note: "'readTMVar' is already exported from Relude"
+    rhs: readTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.tryReadTMVar
+    name: "Use 'tryReadTMVar' from Relude"
+    note: "'tryReadTMVar' is already exported from Relude"
+    rhs: tryReadTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.swapTMVar
+    name: "Use 'swapTMVar' from Relude"
+    note: "'swapTMVar' is already exported from Relude"
+    rhs: swapTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.tryTakeTMVar
+    name: "Use 'tryTakeTMVar' from Relude"
+    note: "'tryTakeTMVar' is already exported from Relude"
+    rhs: tryTakeTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.tryPutTMVar
+    name: "Use 'tryPutTMVar' from Relude"
+    note: "'tryPutTMVar' is already exported from Relude"
+    rhs: tryPutTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.isEmptyTMVar
+    name: "Use 'isEmptyTMVar' from Relude"
+    note: "'isEmptyTMVar' is already exported from Relude"
+    rhs: isEmptyTMVar
+- warn:
+    lhs: Control.Concurrent.STM.TMVar.mkWeakTMVar
+    name: "Use 'mkWeakTMVar' from Relude"
+    note: "'mkWeakTMVar' is already exported from Relude"
+    rhs: mkWeakTMVar
+- warn:
+    lhs: Data.IORef.IORef
+    name: "Use 'IORef' from Relude"
+    note: "'IORef' is already exported from Relude"
+    rhs: IORef
+- warn:
+    lhs: Data.IORef.atomicModifyIORef
+    name: "Use 'atomicModifyIORef' from Relude"
+    note: "'atomicModifyIORef' is already exported from Relude"
+    rhs: atomicModifyIORef
+- warn:
+    lhs: "Data.IORef.atomicModifyIORef'"
+    name: "Use 'atomicModifyIORef'' from Relude"
+    note: "'atomicModifyIORef'' is already exported from Relude"
+    rhs: "atomicModifyIORef'"
+- warn:
+    lhs: Data.IORef.atomicWriteIORef
+    name: "Use 'atomicWriteIORef' from Relude"
+    note: "'atomicWriteIORef' is already exported from Relude"
+    rhs: atomicWriteIORef
+- warn:
+    lhs: Data.IORef.modifyIORef
+    name: "Use 'modifyIORef' from Relude"
+    note: "'modifyIORef' is already exported from Relude"
+    rhs: modifyIORef
+- warn:
+    lhs: "Data.IORef.modifyIORef'"
+    name: "Use 'modifyIORef'' from Relude"
+    note: "'modifyIORef'' is already exported from Relude"
+    rhs: "modifyIORef'"
+- warn:
+    lhs: Data.IORef.newIORef
+    name: "Use 'newIORef' from Relude"
+    note: "'newIORef' is already exported from Relude"
+    rhs: newIORef
+- warn:
+    lhs: Data.IORef.readIORef
+    name: "Use 'readIORef' from Relude"
+    note: "'readIORef' is already exported from Relude"
+    rhs: readIORef
+- warn:
+    lhs: Data.IORef.writeIORef
+    name: "Use 'writeIORef' from Relude"
+    note: "'writeIORef' is already exported from Relude"
+    rhs: writeIORef
+- warn:
+    lhs: "atomicModifyIORef ref (\\a -> (f a, ()))"
+    rhs: atomicModifyIORef_ ref f
+- warn:
+    lhs: "atomicModifyIORef ref $ \\a -> (f a, ())"
+    rhs: atomicModifyIORef_ ref f
+- warn:
+    lhs: "atomicModifyIORef' ref $ \\a -> (f a, ())"
+    rhs: "atomicModifyIORef'_ ref f"
+- warn:
+    lhs: "atomicModifyIORef' ref (\\a -> (f a, ()))"
+    rhs: "atomicModifyIORef'_ ref f"
+- warn:
+    lhs: Data.Text.IO.getLine
+    name: "Use 'getLine' from Relude"
+    note: "'getLine' is already exported from Relude"
+    rhs: getLine
+- warn:
+    lhs: System.IO.hFlush
+    name: "Use 'hFlush' from Relude"
+    note: "'hFlush' is already exported from Relude"
+    rhs: hFlush
+- warn:
+    lhs: System.IO.hIsEOF
+    name: "Use 'hIsEOF' from Relude"
+    note: "'hIsEOF' is already exported from Relude"
+    rhs: hIsEOF
+- warn:
+    lhs: System.IO.hSetBuffering
+    name: "Use 'hSetBuffering' from Relude"
+    note: "'hSetBuffering' is already exported from Relude"
+    rhs: hSetBuffering
+- warn:
+    lhs: System.IO.hGetBuffering
+    name: "Use 'hGetBuffering' from Relude"
+    note: "'hGetBuffering' is already exported from Relude"
+    rhs: hGetBuffering
+- warn:
+    lhs: System.IO.Handle
+    name: "Use 'Handle' from Relude"
+    note: "'Handle' is already exported from Relude"
+    rhs: Handle
+- warn:
+    lhs: System.IO.stdin
+    name: "Use 'stdin' from Relude"
+    note: "'stdin' is already exported from Relude"
+    rhs: stdin
+- warn:
+    lhs: System.IO.stdout
+    name: "Use 'stdout' from Relude"
+    note: "'stdout' is already exported from Relude"
+    rhs: stdout
+- warn:
+    lhs: System.IO.stderr
+    name: "Use 'stderr' from Relude"
+    note: "'stderr' is already exported from Relude"
+    rhs: stderr
+- warn:
+    lhs: System.IO.withFile
+    name: "Use 'withFile' from Relude"
+    note: "'withFile' is already exported from Relude"
+    rhs: withFile
+- warn:
+    lhs: System.IO.BufferMode
+    name: "Use 'BufferMode' from Relude"
+    note: "'BufferMode' is already exported from Relude"
+    rhs: BufferMode
+- warn:
+    lhs: System.Environment.getArgs
+    name: "Use 'getArgs' from Relude"
+    note: "'getArgs' is already exported from Relude"
+    rhs: getArgs
+- warn:
+    lhs: System.Environment.lookupEnv
+    name: "Use 'lookupEnv' from Relude"
+    note: "'lookupEnv' is already exported from Relude"
+    rhs: lookupEnv
+- warn:
+    lhs: Data.List.genericDrop
+    name: "Use 'genericDrop' from Relude"
+    note: "'genericDrop' is already exported from Relude"
+    rhs: genericDrop
+- warn:
+    lhs: Data.List.genericLength
+    name: "Use 'genericLength' from Relude"
+    note: "'genericLength' is already exported from Relude"
+    rhs: genericLength
+- warn:
+    lhs: Data.List.genericReplicate
+    name: "Use 'genericReplicate' from Relude"
+    note: "'genericReplicate' is already exported from Relude"
+    rhs: genericReplicate
+- warn:
+    lhs: Data.List.genericSplitAt
+    name: "Use 'genericSplitAt' from Relude"
+    note: "'genericSplitAt' is already exported from Relude"
+    rhs: genericSplitAt
+- warn:
+    lhs: Data.List.genericTake
+    name: "Use 'genericTake' from Relude"
+    note: "'genericTake' is already exported from Relude"
+    rhs: genericTake
+- warn:
+    lhs: Data.List.group
+    name: "Use 'group' from Relude"
+    note: "'group' is already exported from Relude"
+    rhs: group
+- warn:
+    lhs: Data.List.inits
+    name: "Use 'inits' from Relude"
+    note: "'inits' is already exported from Relude"
+    rhs: inits
+- warn:
+    lhs: Data.List.intercalate
+    name: "Use 'intercalate' from Relude"
+    note: "'intercalate' is already exported from Relude"
+    rhs: intercalate
+- warn:
+    lhs: Data.List.intersperse
+    name: "Use 'intersperse' from Relude"
+    note: "'intersperse' is already exported from Relude"
+    rhs: intersperse
+- warn:
+    lhs: Data.List.isPrefixOf
+    name: "Use 'isPrefixOf' from Relude"
+    note: "'isPrefixOf' is already exported from Relude"
+    rhs: isPrefixOf
+- warn:
+    lhs: Data.List.permutations
+    name: "Use 'permutations' from Relude"
+    note: "'permutations' is already exported from Relude"
+    rhs: permutations
+- warn:
+    lhs: "Data.List.scanl'"
+    name: "Use 'scanl'' from Relude"
+    note: "'scanl'' is already exported from Relude"
+    rhs: "scanl'"
+- warn:
+    lhs: Data.List.sort
+    name: "Use 'sort' from Relude"
+    note: "'sort' is already exported from Relude"
+    rhs: sort
+- warn:
+    lhs: Data.List.sortBy
+    name: "Use 'sortBy' from Relude"
+    note: "'sortBy' is already exported from Relude"
+    rhs: sortBy
+- warn:
+    lhs: Data.List.sortOn
+    name: "Use 'sortOn' from Relude"
+    note: "'sortOn' is already exported from Relude"
+    rhs: sortOn
+- warn:
+    lhs: Data.List.subsequences
+    name: "Use 'subsequences' from Relude"
+    note: "'subsequences' is already exported from Relude"
+    rhs: subsequences
+- warn:
+    lhs: Data.List.tails
+    name: "Use 'tails' from Relude"
+    note: "'tails' is already exported from Relude"
+    rhs: tails
+- warn:
+    lhs: Data.List.transpose
+    name: "Use 'transpose' from Relude"
+    note: "'transpose' is already exported from Relude"
+    rhs: transpose
+- warn:
+    lhs: Data.List.uncons
+    name: "Use 'uncons' from Relude"
+    note: "'uncons' is already exported from Relude"
+    rhs: uncons
+- warn:
+    lhs: Data.List.unfoldr
+    name: "Use 'unfoldr' from Relude"
+    note: "'unfoldr' is already exported from Relude"
+    rhs: unfoldr
+- warn:
+    lhs: Data.List.NonEmpty.NonEmpty
+    name: "Use 'NonEmpty' from Relude"
+    note: "'NonEmpty' is already exported from Relude"
+    rhs: NonEmpty
+- warn:
+    lhs: "(Data.List.NonEmpty.:|)"
+    name: "Use ':|' from Relude"
+    note: "Operator '(:|)' is already exported from Relude"
+    rhs: "(:|)"
+- warn:
+    lhs: Data.List.NonEmpty.nonEmpty
+    name: "Use 'nonEmpty' from Relude"
+    note: "'nonEmpty' is already exported from Relude"
+    rhs: nonEmpty
+- warn:
+    lhs: Data.List.NonEmpty.head
+    name: "Use 'head' from Relude"
+    note: "'head' is already exported from Relude"
+    rhs: head
+- warn:
+    lhs: Data.List.NonEmpty.init
+    name: "Use 'init' from Relude"
+    note: "'init' is already exported from Relude"
+    rhs: init
+- warn:
+    lhs: Data.List.NonEmpty.last
+    name: "Use 'last' from Relude"
+    note: "'last' is already exported from Relude"
+    rhs: last
+- warn:
+    lhs: Data.List.NonEmpty.tail
+    name: "Use 'tail' from Relude"
+    note: "'tail' is already exported from Relude"
+    rhs: tail
+- warn:
+    lhs: GHC.Exts.sortWith
+    name: "Use 'sortWith' from Relude"
+    note: "'sortWith' is already exported from Relude"
+    rhs: sortWith
+- warn:
+    lhs: Control.Monad.Except.ExceptT
+    name: "Use 'ExceptT' from Relude"
+    note: "'ExceptT' is already exported from Relude"
+    rhs: ExceptT
+- warn:
+    lhs: Control.Monad.Except.runExceptT
+    name: "Use 'runExceptT' from Relude"
+    note: "'runExceptT' is already exported from Relude"
+    rhs: runExceptT
+- warn:
+    lhs: Control.Monad.Reader.MonadReader
+    name: "Use 'MonadReader' from Relude"
+    note: "'MonadReader' is already exported from Relude"
+    rhs: MonadReader
+- warn:
+    lhs: Control.Monad.Reader.Reader
+    name: "Use 'Reader' from Relude"
+    note: "'Reader' is already exported from Relude"
+    rhs: Reader
+- warn:
+    lhs: Control.Monad.Reader.ReaderT
+    name: "Use 'ReaderT' from Relude"
+    note: "'ReaderT' is already exported from Relude"
+    rhs: ReaderT
+- warn:
+    lhs: Control.Monad.Reader.runReaderT
+    name: "Use 'runReaderT' from Relude"
+    note: "'runReaderT' is already exported from Relude"
+    rhs: runReaderT
+- warn:
+    lhs: Control.Monad.Reader.ask
+    name: "Use 'ask' from Relude"
+    note: "'ask' is already exported from Relude"
+    rhs: ask
+- warn:
+    lhs: Control.Monad.Reader.asks
+    name: "Use 'asks' from Relude"
+    note: "'asks' is already exported from Relude"
+    rhs: asks
+- warn:
+    lhs: Control.Monad.Reader.local
+    name: "Use 'local' from Relude"
+    note: "'local' is already exported from Relude"
+    rhs: local
+- warn:
+    lhs: Control.Monad.Reader.reader
+    name: "Use 'reader' from Relude"
+    note: "'reader' is already exported from Relude"
+    rhs: reader
+- warn:
+    lhs: Control.Monad.Reader.runReader
+    name: "Use 'runReader' from Relude"
+    note: "'runReader' is already exported from Relude"
+    rhs: runReader
+- warn:
+    lhs: Control.Monad.Reader.withReader
+    name: "Use 'withReader' from Relude"
+    note: "'withReader' is already exported from Relude"
+    rhs: withReader
+- warn:
+    lhs: Control.Monad.Reader.withReaderT
+    name: "Use 'withReaderT' from Relude"
+    note: "'withReaderT' is already exported from Relude"
+    rhs: withReaderT
+- warn:
+    lhs: Control.Monad.State.Strict.MonadState
+    name: "Use 'MonadState' from Relude"
+    note: "'MonadState' is already exported from Relude"
+    rhs: MonadState
+- warn:
+    lhs: Control.Monad.State.Strict.State
+    name: "Use 'State' from Relude"
+    note: "'State' is already exported from Relude"
+    rhs: State
+- warn:
+    lhs: Control.Monad.State.Strict.StateT
+    name: "Use 'StateT' from Relude"
+    note: "'StateT' is already exported from Relude"
+    rhs: StateT
+- warn:
+    lhs: Control.Monad.State.Strict.runStateT
+    name: "Use 'runStateT' from Relude"
+    note: "'runStateT' is already exported from Relude"
+    rhs: runStateT
+- warn:
+    lhs: Control.Monad.State.Strict.evalState
+    name: "Use 'evalState' from Relude"
+    note: "'evalState' is already exported from Relude"
+    rhs: evalState
+- warn:
+    lhs: Control.Monad.State.Strict.evalStateT
+    name: "Use 'evalStateT' from Relude"
+    note: "'evalStateT' is already exported from Relude"
+    rhs: evalStateT
+- warn:
+    lhs: Control.Monad.State.Strict.execState
+    name: "Use 'execState' from Relude"
+    note: "'execState' is already exported from Relude"
+    rhs: execState
+- warn:
+    lhs: Control.Monad.State.Strict.execStateT
+    name: "Use 'execStateT' from Relude"
+    note: "'execStateT' is already exported from Relude"
+    rhs: execStateT
+- warn:
+    lhs: Control.Monad.State.Strict.get
+    name: "Use 'get' from Relude"
+    note: "'get' is already exported from Relude"
+    rhs: get
+- warn:
+    lhs: Control.Monad.State.Strict.gets
+    name: "Use 'gets' from Relude"
+    note: "'gets' is already exported from Relude"
+    rhs: gets
+- warn:
+    lhs: Control.Monad.State.Strict.modify
+    name: "Use 'modify' from Relude"
+    note: "'modify' is already exported from Relude"
+    rhs: modify
+- warn:
+    lhs: "Control.Monad.State.Strict.modify'"
+    name: "Use 'modify'' from Relude"
+    note: "'modify'' is already exported from Relude"
+    rhs: "modify'"
+- warn:
+    lhs: Control.Monad.State.Strict.put
+    name: "Use 'put' from Relude"
+    note: "'put' is already exported from Relude"
+    rhs: put
+- warn:
+    lhs: Control.Monad.State.Strict.runState
+    name: "Use 'runState' from Relude"
+    note: "'runState' is already exported from Relude"
+    rhs: runState
+- warn:
+    lhs: Control.Monad.State.Strict.state
+    name: "Use 'state' from Relude"
+    note: "'state' is already exported from Relude"
+    rhs: state
+- warn:
+    lhs: Control.Monad.State.Strict.withState
+    name: "Use 'withState' from Relude"
+    note: "'withState' is already exported from Relude"
+    rhs: withState
+- warn:
+    lhs: Control.Monad.Trans.MonadIO
+    name: "Use 'MonadIO' from Relude"
+    note: "'MonadIO' is already exported from Relude"
+    rhs: MonadIO
+- warn:
+    lhs: Control.Monad.Trans.MonadTrans
+    name: "Use 'MonadTrans' from Relude"
+    note: "'MonadTrans' is already exported from Relude"
+    rhs: MonadTrans
+- warn:
+    lhs: Control.Monad.Trans.lift
+    name: "Use 'lift' from Relude"
+    note: "'lift' is already exported from Relude"
+    rhs: lift
+- warn:
+    lhs: Control.Monad.Trans.liftIO
+    name: "Use 'liftIO' from Relude"
+    note: "'liftIO' is already exported from Relude"
+    rhs: liftIO
+- warn:
+    lhs: Control.Monad.Trans.Identity.IdentityT
+    name: "Use 'IdentityT' from Relude"
+    note: "'IdentityT' is already exported from Relude"
+    rhs: IdentityT
+- warn:
+    lhs: Control.Monad.Trans.Identity.runIdentityT
+    name: "Use 'runIdentityT' from Relude"
+    note: "'runIdentityT' is already exported from Relude"
+    rhs: runIdentityT
+- warn:
+    lhs: Control.Monad.Trans.Maybe.MaybeT
+    name: "Use 'MaybeT' from Relude"
+    note: "'MaybeT' is already exported from Relude"
+    rhs: MaybeT
+- warn:
+    lhs: Control.Monad.Trans.Maybe.maybeToExceptT
+    name: "Use 'maybeToExceptT' from Relude"
+    note: "'maybeToExceptT' is already exported from Relude"
+    rhs: maybeToExceptT
+- warn:
+    lhs: Control.Monad.Trans.Maybe.exceptToMaybeT
+    name: "Use 'exceptToMaybeT' from Relude"
+    note: "'exceptToMaybeT' is already exported from Relude"
+    rhs: exceptToMaybeT
+- warn:
+    lhs: Control.Monad.MonadPlus
+    name: "Use 'MonadPlus' from Relude"
+    note: "'MonadPlus' is already exported from Relude"
+    rhs: MonadPlus
+- warn:
+    lhs: Control.Monad.mzero
+    name: "Use 'mzero' from Relude"
+    note: "'mzero' is already exported from Relude"
+    rhs: mzero
+- warn:
+    lhs: Control.Monad.mplus
+    name: "Use 'mplus' from Relude"
+    note: "'mplus' is already exported from Relude"
+    rhs: mplus
+- warn:
+    lhs: Control.Monad.filterM
+    name: "Use 'filterM' from Relude"
+    note: "'filterM' is already exported from Relude"
+    rhs: filterM
+- warn:
+    lhs: Control.Monad.forever
+    name: "Use 'forever' from Relude"
+    note: "'forever' is already exported from Relude"
+    rhs: forever
+- warn:
+    lhs: Control.Monad.join
+    name: "Use 'join' from Relude"
+    note: "'join' is already exported from Relude"
+    rhs: join
+- warn:
+    lhs: Control.Monad.mapAndUnzipM
+    name: "Use 'mapAndUnzipM' from Relude"
+    note: "'mapAndUnzipM' is already exported from Relude"
+    rhs: mapAndUnzipM
+- warn:
+    lhs: Control.Monad.mfilter
+    name: "Use 'mfilter' from Relude"
+    note: "'mfilter' is already exported from Relude"
+    rhs: mfilter
+- warn:
+    lhs: Control.Monad.replicateM
+    name: "Use 'replicateM' from Relude"
+    note: "'replicateM' is already exported from Relude"
+    rhs: replicateM
+- warn:
+    lhs: Control.Monad.replicateM_
+    name: "Use 'replicateM_' from Relude"
+    note: "'replicateM_' is already exported from Relude"
+    rhs: replicateM_
+- warn:
+    lhs: Control.Monad.zipWithM
+    name: "Use 'zipWithM' from Relude"
+    note: "'zipWithM' is already exported from Relude"
+    rhs: zipWithM
+- warn:
+    lhs: Control.Monad.zipWithM_
+    name: "Use 'zipWithM_' from Relude"
+    note: "'zipWithM_' is already exported from Relude"
+    rhs: zipWithM_
+- warn:
+    lhs: "(Control.Monad.<$!>)"
+    name: "Use '<$!>' from Relude"
+    note: "Operator '(<$!>)' is already exported from Relude"
+    rhs: "(<$!>)"
+- warn:
+    lhs: "(Control.Monad.<=<)"
+    name: "Use '<=<' from Relude"
+    note: "Operator '(<=<)' is already exported from Relude"
+    rhs: "(<=<)"
+- warn:
+    lhs: "(Control.Monad.=<<)"
+    name: "Use '=<<' from Relude"
+    note: "Operator '(=<<)' is already exported from Relude"
+    rhs: "(=<<)"
+- warn:
+    lhs: "(Control.Monad.>=>)"
+    name: "Use '>=>' from Relude"
+    note: "Operator '(>=>)' is already exported from Relude"
+    rhs: "(>=>)"
+- warn:
+    lhs: Control.Monad.Fail.MonadFail
+    name: "Use 'MonadFail' from Relude"
+    note: "'MonadFail' is already exported from Relude"
+    rhs: MonadFail
+- warn:
+    lhs: Data.Maybe.catMaybes
+    name: "Use 'catMaybes' from Relude"
+    note: "'catMaybes' is already exported from Relude"
+    rhs: catMaybes
+- warn:
+    lhs: Data.Maybe.fromMaybe
+    name: "Use 'fromMaybe' from Relude"
+    note: "'fromMaybe' is already exported from Relude"
+    rhs: fromMaybe
+- warn:
+    lhs: Data.Maybe.isJust
+    name: "Use 'isJust' from Relude"
+    note: "'isJust' is already exported from Relude"
+    rhs: isJust
+- warn:
+    lhs: Data.Maybe.isNothing
+    name: "Use 'isNothing' from Relude"
+    note: "'isNothing' is already exported from Relude"
+    rhs: isNothing
+- warn:
+    lhs: Data.Maybe.listToMaybe
+    name: "Use 'listToMaybe' from Relude"
+    note: "'listToMaybe' is already exported from Relude"
+    rhs: listToMaybe
+- warn:
+    lhs: Data.Maybe.mapMaybe
+    name: "Use 'mapMaybe' from Relude"
+    note: "'mapMaybe' is already exported from Relude"
+    rhs: mapMaybe
+- warn:
+    lhs: Data.Maybe.maybeToList
+    name: "Use 'maybeToList' from Relude"
+    note: "'maybeToList' is already exported from Relude"
+    rhs: maybeToList
+- warn:
+    lhs: Data.Either.isLeft
+    name: "Use 'isLeft' from Relude"
+    note: "'isLeft' is already exported from Relude"
+    rhs: isLeft
+- warn:
+    lhs: Data.Either.isRight
+    name: "Use 'isRight' from Relude"
+    note: "'isRight' is already exported from Relude"
+    rhs: isRight
+- warn:
+    lhs: Data.Either.lefts
+    name: "Use 'lefts' from Relude"
+    note: "'lefts' is already exported from Relude"
+    rhs: lefts
+- warn:
+    lhs: Data.Either.partitionEithers
+    name: "Use 'partitionEithers' from Relude"
+    note: "'partitionEithers' is already exported from Relude"
+    rhs: partitionEithers
+- warn:
+    lhs: Data.Either.rights
+    name: "Use 'rights' from Relude"
+    note: "'rights' is already exported from Relude"
+    rhs: rights
+- warn:
+    lhs: Data.Monoid.All
+    name: "Use 'All' from Relude"
+    note: "'All' is already exported from Relude"
+    rhs: All
+- warn:
+    lhs: Data.Monoid.getAll
+    name: "Use 'getAll' from Relude"
+    note: "'getAll' is already exported from Relude"
+    rhs: getAll
+- warn:
+    lhs: Data.Monoid.Alt
+    name: "Use 'Alt' from Relude"
+    note: "'Alt' is already exported from Relude"
+    rhs: Alt
+- warn:
+    lhs: Data.Monoid.getAlt
+    name: "Use 'getAlt' from Relude"
+    note: "'getAlt' is already exported from Relude"
+    rhs: getAlt
+- warn:
+    lhs: Data.Monoid.Any
+    name: "Use 'Any' from Relude"
+    note: "'Any' is already exported from Relude"
+    rhs: Any
+- warn:
+    lhs: Data.Monoid.getAny
+    name: "Use 'getAny' from Relude"
+    note: "'getAny' is already exported from Relude"
+    rhs: getAny
+- warn:
+    lhs: Data.Monoid.Ap
+    name: "Use 'Ap' from Relude"
+    note: "'Ap' is already exported from Relude"
+    rhs: Ap
+- warn:
+    lhs: Data.Monoid.getAp
+    name: "Use 'getAp' from Relude"
+    note: "'getAp' is already exported from Relude"
+    rhs: getAp
+- warn:
+    lhs: Data.Monoid.Dual
+    name: "Use 'Dual' from Relude"
+    note: "'Dual' is already exported from Relude"
+    rhs: Dual
+- warn:
+    lhs: Data.Monoid.getDual
+    name: "Use 'getDual' from Relude"
+    note: "'getDual' is already exported from Relude"
+    rhs: getDual
+- warn:
+    lhs: Data.Monoid.Endo
+    name: "Use 'Endo' from Relude"
+    note: "'Endo' is already exported from Relude"
+    rhs: Endo
+- warn:
+    lhs: Data.Monoid.appEndo
+    name: "Use 'appEndo' from Relude"
+    note: "'appEndo' is already exported from Relude"
+    rhs: appEndo
+- warn:
+    lhs: Data.Monoid.First
+    name: "Use 'First' from Relude"
+    note: "'First' is already exported from Relude"
+    rhs: First
+- warn:
+    lhs: Data.Monoid.getFirst
+    name: "Use 'getFirst' from Relude"
+    note: "'getFirst' is already exported from Relude"
+    rhs: getFirst
+- warn:
+    lhs: Data.Monoid.Last
+    name: "Use 'Last' from Relude"
+    note: "'Last' is already exported from Relude"
+    rhs: Last
+- warn:
+    lhs: Data.Monoid.getLast
+    name: "Use 'getLast' from Relude"
+    note: "'getLast' is already exported from Relude"
+    rhs: getLast
+- warn:
+    lhs: Data.Monoid.Product
+    name: "Use 'Product' from Relude"
+    note: "'Product' is already exported from Relude"
+    rhs: Product
+- warn:
+    lhs: Data.Monoid.getProduct
+    name: "Use 'getProduct' from Relude"
+    note: "'getProduct' is already exported from Relude"
+    rhs: getProduct
+- warn:
+    lhs: Data.Monoid.Sum
+    name: "Use 'Sum' from Relude"
+    note: "'Sum' is already exported from Relude"
+    rhs: Sum
+- warn:
+    lhs: Data.Monoid.getSum
+    name: "Use 'getSum' from Relude"
+    note: "'getSum' is already exported from Relude"
+    rhs: getSum
+- warn:
+    lhs: Data.Semigroup.Option
+    name: "Use 'Option' from Relude"
+    note: "'Option' is already exported from Relude"
+    rhs: Option
+- warn:
+    lhs: Data.Semigroup.getOption
+    name: "Use 'getOption' from Relude"
+    note: "'getOption' is already exported from Relude"
+    rhs: getOption
+- warn:
+    lhs: Data.Semigroup.Semigroup
+    name: "Use 'Semigroup' from Relude"
+    note: "'Semigroup' is already exported from Relude"
+    rhs: Semigroup
+- warn:
+    lhs: Data.Semigroup.sconcat
+    name: "Use 'sconcat' from Relude"
+    note: "'sconcat' is already exported from Relude"
+    rhs: sconcat
+- warn:
+    lhs: Data.Semigroup.stimes
+    name: "Use 'stimes' from Relude"
+    note: "'stimes' is already exported from Relude"
+    rhs: stimes
+- warn:
+    lhs: "(Data.Semigroup.<>)"
+    name: "Use '<>' from Relude"
+    note: "Operator '(<>)' is already exported from Relude"
+    rhs: "(<>)"
+- warn:
+    lhs: Data.Semigroup.WrappedMonoid
+    name: "Use 'WrappedMonoid' from Relude"
+    note: "'WrappedMonoid' is already exported from Relude"
+    rhs: WrappedMonoid
+- warn:
+    lhs: Data.Semigroup.cycle1
+    name: "Use 'cycle1' from Relude"
+    note: "'cycle1' is already exported from Relude"
+    rhs: cycle1
+- warn:
+    lhs: Data.Semigroup.mtimesDefault
+    name: "Use 'mtimesDefault' from Relude"
+    note: "'mtimesDefault' is already exported from Relude"
+    rhs: mtimesDefault
+- warn:
+    lhs: Data.Semigroup.stimesIdempotent
+    name: "Use 'stimesIdempotent' from Relude"
+    note: "'stimesIdempotent' is already exported from Relude"
+    rhs: stimesIdempotent
+- warn:
+    lhs: Data.Semigroup.stimesIdempotentMonoid
+    name: "Use 'stimesIdempotentMonoid' from Relude"
+    note: "'stimesIdempotentMonoid' is already exported from Relude"
+    rhs: stimesIdempotentMonoid
+- warn:
+    lhs: Data.Semigroup.stimesMonoid
+    name: "Use 'stimesMonoid' from Relude"
+    note: "'stimesMonoid' is already exported from Relude"
+    rhs: stimesMonoid
+- warn:
+    lhs: Data.ByteString.ByteString
+    name: "Use 'ByteString' from Relude"
+    note: "'ByteString' is already exported from Relude"
+    rhs: ByteString
+- warn:
+    lhs: Data.ByteString.Short.ShortByteString
+    name: "Use 'ShortByteString' from Relude"
+    note: "'ShortByteString' is already exported from Relude"
+    rhs: ShortByteString
+- warn:
+    lhs: Data.ByteString.Short.toShort
+    name: "Use 'toShort' from Relude"
+    note: "'toShort' is already exported from Relude"
+    rhs: toShort
+- warn:
+    lhs: Data.ByteString.Short.fromShort
+    name: "Use 'fromShort' from Relude"
+    note: "'fromShort' is already exported from Relude"
+    rhs: fromShort
+- warn:
+    lhs: Data.String.IsString
+    name: "Use 'IsString' from Relude"
+    note: "'IsString' is already exported from Relude"
+    rhs: IsString
+- warn:
+    lhs: Data.String.fromString
+    name: "Use 'fromString' from Relude"
+    note: "'fromString' is already exported from Relude"
+    rhs: fromString
+- warn:
+    lhs: Data.Text.Text
+    name: "Use 'Text' from Relude"
+    note: "'Text' is already exported from Relude"
+    rhs: Text
+- warn:
+    lhs: Data.Text.lines
+    name: "Use 'lines' from Relude"
+    note: "'lines' is already exported from Relude"
+    rhs: lines
+- warn:
+    lhs: Data.Text.unlines
+    name: "Use 'unlines' from Relude"
+    note: "'unlines' is already exported from Relude"
+    rhs: unlines
+- warn:
+    lhs: Data.Text.words
+    name: "Use 'words' from Relude"
+    note: "'words' is already exported from Relude"
+    rhs: words
+- warn:
+    lhs: Data.Text.unwords
+    name: "Use 'unwords' from Relude"
+    note: "'unwords' is already exported from Relude"
+    rhs: unwords
+- warn:
+    lhs: "Data.Text.Encoding.decodeUtf8'"
+    name: "Use 'decodeUtf8'' from Relude"
+    note: "'decodeUtf8'' is already exported from Relude"
+    rhs: "decodeUtf8'"
+- warn:
+    lhs: Data.Text.Encoding.decodeUtf8With
+    name: "Use 'decodeUtf8With' from Relude"
+    note: "'decodeUtf8With' is already exported from Relude"
+    rhs: decodeUtf8With
+- warn:
+    lhs: Data.Text.Encoding.Error.OnDecodeError
+    name: "Use 'OnDecodeError' from Relude"
+    note: "'OnDecodeError' is already exported from Relude"
+    rhs: OnDecodeError
+- warn:
+    lhs: Data.Text.Encoding.Error.OnError
+    name: "Use 'OnError' from Relude"
+    note: "'OnError' is already exported from Relude"
+    rhs: OnError
+- warn:
+    lhs: Data.Text.Encoding.Error.UnicodeException
+    name: "Use 'UnicodeException' from Relude"
+    note: "'UnicodeException' is already exported from Relude"
+    rhs: UnicodeException
+- warn:
+    lhs: Data.Text.Encoding.Error.lenientDecode
+    name: "Use 'lenientDecode' from Relude"
+    note: "'lenientDecode' is already exported from Relude"
+    rhs: lenientDecode
+- warn:
+    lhs: Data.Text.Encoding.Error.strictDecode
+    name: "Use 'strictDecode' from Relude"
+    note: "'strictDecode' is already exported from Relude"
+    rhs: strictDecode
+- warn:
+    lhs: Text.Read.Read
+    name: "Use 'Read' from Relude"
+    note: "'Read' is already exported from Relude"
+    rhs: Read
+- warn:
+    lhs: Text.Read.readMaybe
+    name: "Use 'readMaybe' from Relude"
+    note: "'readMaybe' is already exported from Relude"
+    rhs: readMaybe
+- warn:
+    lhs: "(liftIO (newEmptyMVar ))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'newEmptyMVar' from Relude, it's already lifted"
+    rhs: newEmptyMVar
+- warn:
+    lhs: "(liftIO (newMVar x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'newMVar' from Relude, it's already lifted"
+    rhs: newMVar
+- warn:
+    lhs: "(liftIO (putMVar x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putMVar' from Relude, it's already lifted"
+    rhs: putMVar
+- warn:
+    lhs: "(liftIO (readMVar x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'readMVar' from Relude, it's already lifted"
+    rhs: readMVar
+- warn:
+    lhs: "(liftIO (swapMVar x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'swapMVar' from Relude, it's already lifted"
+    rhs: swapMVar
+- warn:
+    lhs: "(liftIO (takeMVar x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'takeMVar' from Relude, it's already lifted"
+    rhs: takeMVar
+- warn:
+    lhs: "(liftIO (tryPutMVar x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'tryPutMVar' from Relude, it's already lifted"
+    rhs: tryPutMVar
+- warn:
+    lhs: "(liftIO (tryReadMVar x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'tryReadMVar' from Relude, it's already lifted"
+    rhs: tryReadMVar
+- warn:
+    lhs: "(liftIO (tryTakeMVar x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'tryTakeMVar' from Relude, it's already lifted"
+    rhs: tryTakeMVar
+- warn:
+    lhs: "(liftIO (atomically x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'atomically' from Relude, it's already lifted"
+    rhs: atomically
+- warn:
+    lhs: "(liftIO (newTVarIO x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'newTVarIO' from Relude, it's already lifted"
+    rhs: newTVarIO
+- warn:
+    lhs: "(liftIO (readTVarIO x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'readTVarIO' from Relude, it's already lifted"
+    rhs: readTVarIO
+- warn:
+    lhs: "(liftIO (newTMVarIO x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'newTMVarIO' from Relude, it's already lifted"
+    rhs: newTMVarIO
+- warn:
+    lhs: "(liftIO (newEmptyTMVarIO ))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'newEmptyTMVarIO' from Relude, it's already lifted"
+    rhs: newEmptyTMVarIO
+- warn:
+    lhs: "(liftIO (exitWith x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'exitWith' from Relude, it's already lifted"
+    rhs: exitWith
+- warn:
+    lhs: "(liftIO (exitFailure ))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'exitFailure' from Relude, it's already lifted"
+    rhs: exitFailure
+- warn:
+    lhs: "(liftIO (exitSuccess ))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'exitSuccess' from Relude, it's already lifted"
+    rhs: exitSuccess
+- warn:
+    lhs: "(liftIO (die x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'die' from Relude, it's already lifted"
+    rhs: die
+- warn:
+    lhs: "(liftIO (readFile x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'readFile' from Relude, it's already lifted"
+    rhs: readFile
+- warn:
+    lhs: "(liftIO (writeFile x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'writeFile' from Relude, it's already lifted"
+    rhs: writeFile
+- warn:
+    lhs: "(liftIO (appendFile x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'appendFile' from Relude, it's already lifted"
+    rhs: appendFile
+- warn:
+    lhs: "(liftIO (readFileText x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'readFileText' from Relude, it's already lifted"
+    rhs: readFileText
+- warn:
+    lhs: "(liftIO (writeFileText x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'writeFileText' from Relude, it's already lifted"
+    rhs: writeFileText
+- warn:
+    lhs: "(liftIO (appendFileText x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'appendFileText' from Relude, it's already lifted"
+    rhs: appendFileText
+- warn:
+    lhs: "(liftIO (readFileLText x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'readFileLText' from Relude, it's already lifted"
+    rhs: readFileLText
+- warn:
+    lhs: "(liftIO (writeFileLText x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'writeFileLText' from Relude, it's already lifted"
+    rhs: writeFileLText
+- warn:
+    lhs: "(liftIO (appendFileLText x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'appendFileLText' from Relude, it's already lifted"
+    rhs: appendFileLText
+- warn:
+    lhs: "(liftIO (readFileBS x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'readFileBS' from Relude, it's already lifted"
+    rhs: readFileBS
+- warn:
+    lhs: "(liftIO (writeFileBS x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'writeFileBS' from Relude, it's already lifted"
+    rhs: writeFileBS
+- warn:
+    lhs: "(liftIO (appendFileBS x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'appendFileBS' from Relude, it's already lifted"
+    rhs: appendFileBS
+- warn:
+    lhs: "(liftIO (readFileLBS x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'readFileLBS' from Relude, it's already lifted"
+    rhs: readFileLBS
+- warn:
+    lhs: "(liftIO (writeFileLBS x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'writeFileLBS' from Relude, it's already lifted"
+    rhs: writeFileLBS
+- warn:
+    lhs: "(liftIO (appendFileLBS x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'appendFileLBS' from Relude, it's already lifted"
+    rhs: appendFileLBS
+- warn:
+    lhs: "(liftIO (newIORef x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'newIORef' from Relude, it's already lifted"
+    rhs: newIORef
+- warn:
+    lhs: "(liftIO (readIORef x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'readIORef' from Relude, it's already lifted"
+    rhs: readIORef
+- warn:
+    lhs: "(liftIO (writeIORef x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'writeIORef' from Relude, it's already lifted"
+    rhs: writeIORef
+- warn:
+    lhs: "(liftIO (modifyIORef x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'modifyIORef' from Relude, it's already lifted"
+    rhs: modifyIORef
+- warn:
+    lhs: "(liftIO (modifyIORef' x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'modifyIORef'' from Relude, it's already lifted"
+    rhs: "modifyIORef'"
+- warn:
+    lhs: "(liftIO (atomicModifyIORef x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'atomicModifyIORef' from Relude, it's already lifted"
+    rhs: atomicModifyIORef
+- warn:
+    lhs: "(liftIO (atomicModifyIORef' x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'atomicModifyIORef'' from Relude, it's already lifted"
+    rhs: "atomicModifyIORef'"
+- warn:
+    lhs: "(liftIO (atomicWriteIORef x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'atomicWriteIORef' from Relude, it's already lifted"
+    rhs: atomicWriteIORef
+- warn:
+    lhs: "(liftIO (getLine ))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'getLine' from Relude, it's already lifted"
+    rhs: getLine
+- warn:
+    lhs: "(liftIO (print x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'print' from Relude, it's already lifted"
+    rhs: print
+- warn:
+    lhs: "(liftIO (putStr x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putStr' from Relude, it's already lifted"
+    rhs: putStr
+- warn:
+    lhs: "(liftIO (putStrLn x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putStrLn' from Relude, it's already lifted"
+    rhs: putStrLn
+- warn:
+    lhs: "(liftIO (putText x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putText' from Relude, it's already lifted"
+    rhs: putText
+- warn:
+    lhs: "(liftIO (putTextLn x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putTextLn' from Relude, it's already lifted"
+    rhs: putTextLn
+- warn:
+    lhs: "(liftIO (putLText x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putLText' from Relude, it's already lifted"
+    rhs: putLText
+- warn:
+    lhs: "(liftIO (putLTextLn x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putLTextLn' from Relude, it's already lifted"
+    rhs: putLTextLn
+- warn:
+    lhs: "(liftIO (putBS x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putBS' from Relude, it's already lifted"
+    rhs: putBS
+- warn:
+    lhs: "(liftIO (putBSLn x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putBSLn' from Relude, it's already lifted"
+    rhs: putBSLn
+- warn:
+    lhs: "(liftIO (putLBS x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putLBS' from Relude, it's already lifted"
+    rhs: putLBS
+- warn:
+    lhs: "(liftIO (putLBSLn x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'putLBSLn' from Relude, it's already lifted"
+    rhs: putLBSLn
+- warn:
+    lhs: "(liftIO (hFlush x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'hFlush' from Relude, it's already lifted"
+    rhs: hFlush
+- warn:
+    lhs: "(liftIO (hIsEOF x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'hIsEOF' from Relude, it's already lifted"
+    rhs: hIsEOF
+- warn:
+    lhs: "(liftIO (hSetBuffering x y))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'hSetBuffering' from Relude, it's already lifted"
+    rhs: hSetBuffering
+- warn:
+    lhs: "(liftIO (hGetBuffering x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'hGetBuffering' from Relude, it's already lifted"
+    rhs: hGetBuffering
+- warn:
+    lhs: "(liftIO (getArgs ))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'getArgs' from Relude, it's already lifted"
+    rhs: getArgs
+- warn:
+    lhs: "(liftIO (lookupEnv x))"
+    name: "'liftIO' is not needed"
+    note: "If you import 'lookupEnv' from Relude, it's already lifted"
+    rhs: lookupEnv
+- hint:
+    lhs: "fmap (bimap f g)"
+    note: "Use `bimapF` from `Relude.Extra.Bifunctor`"
+    rhs: bimapF f g
+- hint:
+    lhs: "bimap f g <$> x"
+    note: "Use `bimapF` from `Relude.Extra.Bifunctor`"
+    rhs: bimapF f g x
+- hint:
+    lhs: "fmap (first f)"
+    note: "Use `firstF` from `Relude.Extra.Bifunctor`"
+    rhs: firstF f
+- hint:
+    lhs: fmap . first
+    note: "Use `firstF` from `Relude.Extra.Bifunctor`"
+    rhs: firstF
+- hint:
+    lhs: "fmap (second f)"
+    note: "Use `secondF` from `Relude.Extra.Bifunctor`"
+    rhs: secondF f
+- hint:
+    lhs: fmap . second
+    note: "Use `secondF` from `Relude.Extra.Bifunctor`"
+    rhs: secondF
+- hint:
+    lhs: "[minBound .. maxBound]"
+    note: "Use `universe` from `Relude.Extra.Enum`"
+    rhs: universe
+- hint:
+    lhs: succ
+    note: "`succ` from `Prelude` is a pure function but it may throw exception. Consider using `next` from `Relude.Extra.Enum` instead."
+    rhs: next
+- hint:
+    lhs: pred
+    note: "`pred` from `Prelude` is a pure function but it may throw exception. Consider using `prev` from `Relude.Extra.Enum` instead."
+    rhs: prev
+- hint:
+    lhs: toEnum
+    note: "`toEnum` from `Prelude` is a pure function but it may throw exception. Consider using `safeToEnum` from `Relude.Extra.Enum` instead."
+    rhs: safeToEnum
+- hint:
+    lhs: sum xs / length xs
+    note: "Use `average` from `Relude.Extra.Foldable`"
+    rhs: average xs
+- hint:
+    lhs: "\\a -> (a, a)"
+    note: "Use `dup` from `Relude.Extra.Tuple`"
+    rhs: dup
+- hint:
+    lhs: "\\a -> (f a, a)"
+    note: "Use `toFst` from `Relude.Extra.Tuple`"
+    rhs: toFst f
+- hint:
+    lhs: "\\a -> (a, f a)"
+    note: "Use `toSnd` from `Relude.Extra.Tuple`"
+    rhs: toSnd f
+- hint:
+    lhs: fmap . toFst
+    note: "Use `fmapToFst` from `Relude.Extra.Tuple`"
+    rhs: fmapToFst
+- hint:
+    lhs: "fmap (toFst f)"
+    note: "Use `fmapToFst` from `Relude.Extra.Tuple`"
+    rhs: fmapToFst f
+- hint:
+    lhs: fmap . toSnd
+    note: "Use `fmapToSnd` from `Relude.Extra.Tuple`"
+    rhs: fmapToSnd
+- hint:
+    lhs: "fmap (toSnd f)"
+    note: "Use `fmapToSnd` from `Relude.Extra.Tuple`"
+    rhs: fmapToSnd f
+- hint:
+    lhs: map . toFst
+    note: "Use `fmapToFst` from `Relude.Extra.Tuple`"
+    rhs: fmapToFst
+- hint:
+    lhs: "map (toFst f)"
+    note: "Use `fmapToFst` from `Relude.Extra.Tuple`"
+    rhs: fmapToFst f
+- hint:
+    lhs: map . toSnd
+    note: "Use `fmapToSnd` from `Relude.Extra.Tuple`"
+    rhs: fmapToSnd
+- hint:
+    lhs: "map (toSnd f)"
+    note: "Use `fmapToSnd` from `Relude.Extra.Tuple`"
+    rhs: fmapToSnd f
+- hint:
+    lhs: "fmap (,a) (f a)"
+    note: "Use `traverseToFst` from `Relude.Extra.Tuple`"
+    rhs: traverseToFst f a
+- hint:
+    lhs: "fmap (flip (,) a) (f a)"
+    note: "Use `traverseToFst` from `Relude.Extra.Tuple`"
+    rhs: traverseToFst f a
+- hint:
+    lhs: "(,a) <$> f a"
+    note: "Use `traverseToFst` from `Relude.Extra.Tuple`"
+    rhs: traverseToFst f a
+- hint:
+    lhs: "flip (,) a <$> f a"
+    note: "Use `traverseToFst` from `Relude.Extra.Tuple`"
+    rhs: traverseToFst f a
+- hint:
+    lhs: "fmap (a,) (f a)"
+    note: "Use `traverseToSnd` from `Relude.Extra.Tuple`"
+    rhs: traverseToSnd f a
+- hint:
+    lhs: "fmap ((,) a) (f a)"
+    note: "Use `traverseToSnd` from `Relude.Extra.Tuple`"
+    rhs: traverseToSnd f a
+- hint:
+    lhs: "(a,) <$> f a"
+    note: "Use `traverseToSnd` from `Relude.Extra.Tuple`"
+    rhs: traverseToSnd f a
+- hint:
+    lhs: "(,) a <$> f a"
+    note: "Use `traverseToSnd` from `Relude.Extra.Tuple`"
+    rhs: traverseToSnd f a

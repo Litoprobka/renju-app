@@ -1,10 +1,9 @@
 module LibSpec (spec) where
 
-import Universum
+import DefaultImports
 import Test.Hspec
 import Lib
 import qualified Move
-import Flow
 
 spec :: Spec
 spec = do

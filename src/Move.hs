@@ -39,7 +39,7 @@ charCoords = "abcdefghijklmno"
 -- | Create a Move from getpos format, i.e. "i7" -> (9, 6)
 fromText :: Text -> Maybe Move
 fromText t =
-    case toList t of
+    case toString t of
         (xCoord:yCoord) -> do
             x' <- xCoord `elemIndex` charCoords
             y' <- readMaybe yCoord

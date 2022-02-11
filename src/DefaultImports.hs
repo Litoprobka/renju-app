@@ -1,11 +1,11 @@
 module DefaultImports (
-    module Universum,
+    module Relude,
     module Flow,
     module Utils,
-    makeLenses
+    module Control.Lens
 ) where
 
-import Universum
+import Relude hiding (fromList)
 import Flow
 import Utils
-import Lens.Micro.TH (makeLenses)
+import Control.Lens hiding ((.>), (<.), (|>), (<|), (.=), uncons, snoc, transform, lens)
