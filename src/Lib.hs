@@ -14,6 +14,7 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.Default ( Default(..) )
 import Data.Aeson
 import Data.List.NonEmpty ((!!))
+import Data.Foldable (foldr')
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -74,7 +75,7 @@ addPos mi ms = over lib (HashMap.insert ms mi)
 -- | /O(log(n) * m)./ Add a positition to the lib move by move
 addPosRec :: MoveSeq -> Lib -> Lib
 addPosRec ms l =
-    foldr addMove (set moves MoveSeq.empty l) (ms ^. MoveSeq.moveList)
+    foldr' addMove (set moves MoveSeq.empty l) (ms ^. MoveSeq.moveList)
 
 -- | /O(log n)./ Add a move to the lib
 addMove :: Move -> Lib -> Lib

@@ -10,6 +10,7 @@ import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
 import Data.Text (snoc)
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Foldable (foldr')
 
 -- | A /seq/uence of /move/s, representing a position on the board.
 --
@@ -101,7 +102,7 @@ back ms = case view moveList ms of
 
 -- | /O(n)./ Construct a MoveSeq from a list of moves
 fromList :: [Move] -> MoveSeq
-fromList = foldr makeMove' MoveSeq.empty
+fromList = foldr' makeMove' MoveSeq.empty
 
 -- | /O(n)./ Construct a MoveSeq from a string in getpos format ("h8i9j6i8k8")
 fromGetpos :: Text -> Maybe MoveSeq
