@@ -156,7 +156,7 @@ getCommentOf =
     ..> fmap (view comment)
     ..> fromMaybe ""
 
--- | /O(log n * log m)./ Get current pos's board text for a given point on the board
+-- | /O(log n * log m)./ Get current pos' board text for a given point on the board
 getBoardText :: Move -> Lib -> Maybe Text
 getBoardText move l = l
     |> currentPos

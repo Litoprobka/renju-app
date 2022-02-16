@@ -18,12 +18,14 @@ extra-source-files:
 
 library
   exposed-modules:
+      BoardTextEditor
       CLI
       DefaultImports
       Lib
       Main
       Move
       MoveSeq
+      UITypes
       UndoRedoList
       Utils
   other-modules:
@@ -58,11 +60,13 @@ library
 executable app
   main-is: Main.hs
   other-modules:
+      BoardTextEditor
       CLI
       DefaultImports
       Lib
       Move
       MoveSeq
+      UITypes
       UndoRedoList
       Utils
       Paths_renju_app

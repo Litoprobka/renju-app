@@ -1,6 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -12,62 +10,12 @@ import MoveSeq (Stone(..), MoveSeq)
 import qualified Move
 import Move (Move)
 import CLI (loadLib, saveLib, LibLoadError(..))
-import UndoRedoList (UndoRedoList)
 import qualified UndoRedoList as URList
 import System.Hclip
+import UITypes
+import BoardTextEditor (boardTextEditor)
 
 import Monomer
-
-data AppModel = AppModel {
-  _libStates :: UndoRedoList Lib,
-  _editing :: EditType
-} deriving (Eq, Show)
-
-data AppEvent
-  = LoadDefaultLib
-  | SaveDefaultLib
-  | Blank
-  | NewLib Lib
-  | BoardClick Move Button Int
-  | Rotate
-  | Mirror
-  | RemovePos
-  | BoardText Move Text
-  | StartEditing Move
-  | StopEditing
-  | Comment Text
-  | Getpos
-  | Paste
-  | Putpos MoveSeq
-  | Undo
-  | Redo
-  deriving (Eq, Show)
-
-data EditType
-  = ENone
-  | EBoardText Move
-  deriving (Eq, Show)
-
-type AppWenv = WidgetEnv AppModel AppEvent
-type AppNode = WidgetNode AppModel AppEvent
-
-makeLenses 'AppModel
-
-data BTEvent
-  = Save
-  | Cancel
-  deriving (Show, Eq)
-
-data BTModel = BTModel {
-  _move :: Move,
-  _boardText :: Text
-} deriving (Show, Eq)
-
-makeLenses 'BTModel
-
--- | Gets current lib state
-lib :: Getting r AppModel Lib
-lib = libStates . URList.current
 
 boardNode :: Lib -> Move -> AppNode
 boardNode l m =
@@ -135,14 +83,21 @@ buildUI
   -> AppNode
 buildUI _ model = widgetTree where
   widgetTree = keystroke (defaultShortcuts model) <|
-    zstack <| boardTextEditor' <| [
+    zstack [
       boardImage,
-      boardGrid (model ^. lib)
+      boardGrid (model ^. lib),
+      btEditor `nodeVisible` isEditing
+      
     ]
 
-  boardTextEditor' l = case model ^. editing of
-    EBoardText m -> l ++ [ box_ [alignMiddle, alignCenter] <| boardTextEditor m (model ^. lib |> Lib.getBoardText m |> fromMaybe "") ]
-    _ -> l
+  btEditor = boardTextEditor boardTextNodeOrDef (model ^. lib |> Lib.getBoardText boardTextNodeOrDef |> fromMaybe "")
+
+  boardTextNodeOrDef = case model ^. editing of
+    EBoardText m -> m
+    _ -> Move.fromIntPartial 0 0
+
+  isEditing = model ^. editing /= ENone -- there should be a better way to write this
+
 
 handleEvent
   :: AppWenv
@@ -152,9 +107,9 @@ handleEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent _ _ model evt = case evt of
   Blank -> []
-  LoadDefaultLib -> one <| Task <| NewLib <$> (throwError =<< loadLib "lib-autosave")
+  LoadDefaultLib -> oneTask <| NewLib <$> (throwError =<< loadLib "lib-autosave")
   
-  SaveDefaultLib -> one <| Task <| Blank <$
+  SaveDefaultLib -> oneTask <| Blank <$
     when (not <| Lib.isEmpty (model ^. lib)) (saveLib "lib-autosave" (model ^. lib))
 
   NewLib newLib -> updateLib (const newLib)
@@ -193,8 +148,10 @@ handleEvent _ _ model evt = case evt of
     putposErr = maybe (error "Failed to parse MoveSeq") pure
 
     handleClick m BtnLeft = updateLib <| Lib.addMove m
-    handleClick m BtnMiddle = one <| Event <| StartEditing m --one <| Event <| BoardText m "board text"
+    handleClick m BtnMiddle = one <| Event <| StartEditing m
     handleClick _ BtnRight = updateLib <| Lib.back
+
+    oneTask = one <. Task
 
 main :: IO ()
 main = do
@@ -223,30 +180,3 @@ defaultShortcuts model = [
   , ("C-c", Getpos)
   , ("C-v", Paste)
   ]
-
-boardTextEditor :: Move -> Text -> AppNode
-boardTextEditor m bt = compositeV "boardTextEditor" initModel (const Blank) buildUI' handleEvent' where
-  initModel = BTModel m bt
-
-  buildUI' _ _ = themeSwitch_ darkTheme [themeClearBg] <| widgets `styleBasic` [maxHeight 120, maxWidth 150, padding 10]
-  widgets =
-      keystroke [("Enter", Save)] <| 
-      vstack [
-        label "Enter board text" `styleBasic` [textCenter, textMiddle],
-        spacer,
-        textField boardText,
-        spacer,
-        hstack [
-          button "Cancel" Cancel,
-          filler,
-          button "Save" Save
-        ]
-      ]
-
-  handleEvent' :: EventHandler BTModel BTEvent AppModel AppEvent
-  handleEvent' _ _ BTModel{..} evt = case evt of
-    Save -> [
-      Report StopEditing,
-      Report <| BoardText _move _boardText
-      ]
-    Cancel -> one <| Report StopEditing
