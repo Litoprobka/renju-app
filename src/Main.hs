@@ -86,7 +86,7 @@ buildUI _ model = widgetTree where
     zstack [
       boardImage,
       boardGrid (model ^. lib),
-      btEditor `nodeVisible` isEditing
+      btEditor `nodeVisible` model ^. isEditing
       
     ]
 
@@ -95,8 +95,6 @@ buildUI _ model = widgetTree where
   boardTextNodeOrDef = case model ^. editing of
     EBoardText m -> m
     _ -> Move.fromIntPartial 0 0
-
-  isEditing = model ^. editing /= ENone -- there should be a better way to write this
 
 
 handleEvent
@@ -122,8 +120,8 @@ handleEvent _ _ model evt = case evt of
   StartEditing m -> updateModel editing (const <| EBoardText m)
   StopEditing -> updateModel editing (const <| ENone)
 
-  Rotate -> updateLib Lib.rotate
-  Mirror -> updateLib Lib.mirror
+  Rotate -> updateIfNotEditing Lib.rotate
+  Mirror -> updateIfNotEditing Lib.mirror
   Comment t -> updateLib <| Lib.addComment t
   Getpos -> one <| Task <| Blank <$ setClipboard (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
 
@@ -139,6 +137,7 @@ handleEvent _ _ model evt = case evt of
     updateModel lens f = [ Model (model |> lens %~ f) ]
     updateLibStates = updateModel libStates
     updateLib = updateLibStates <. URList.update
+    updateIfNotEditing f = join [ updateLib f | not <| model ^. isEditing ] -- the use of join is a bit of ugly
 
     throwError :: Either LibLoadError Lib -> IO Lib
     throwError (Left err) = error <| show err
@@ -177,6 +176,7 @@ defaultShortcuts model = [
   , ("C-z", Undo)
   , ("C-S-z", Redo)
   , ("C-y", Redo)
+  , ("C-s", SaveDefaultLib) -- placeholder
   , ("C-c", Getpos)
   , ("C-v", Paste)
   ]

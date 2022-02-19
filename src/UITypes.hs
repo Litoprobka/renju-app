@@ -66,3 +66,6 @@ makeLenses 'BTModel
 -- | Gets current lib state
 lib :: Getting r AppModel Lib
 lib = libStates . URList.current
+
+isEditing :: Getting r AppModel Bool
+isEditing = to (\model -> model ^. editing /= ENone)
