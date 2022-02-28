@@ -98,6 +98,14 @@ back ms = case view moveList ms of
         |> set moveList moves
         |> updateHashes (-) (flipStone .> hashMult) m
 
+toMove :: Move -> MoveSeq -> MoveSeq
+toMove m ms = go ms where
+        go ms' =
+          lastMove ms'
+          <&> (\m' -> ms' |> applyWhen (m' /= m) (back .> go)) 
+          |> fromMaybe ms
+
+
 -- ** From other types
 
 -- | /O(n)./ Construct a MoveSeq from a list of moves
@@ -156,6 +164,12 @@ stoneAt move =
 -- | /O(n)./ Checks if a move does not in a position
 notIn :: Move -> MoveSeq -> Bool
 notIn move = stoneAt move .> isNothing
+
+lastMove :: MoveSeq -> Maybe Move
+lastMove ms = case ms ^. moveList of
+  m : _ -> Just m
+  [] -> Nothing
+
 
 -- ** Conversions
 

@@ -47,7 +47,7 @@ boardNode l m =
   noNextMove = not <| Lib.exists (MoveSeq.makeMove' m currentPos) l
 
   color
-    | (currentPos ^. MoveSeq.moveList |> safeHead) == Just m = green -- current move
+    | (currentPos |> MoveSeq.lastMove) == Just m = green -- current move
     | otherwise = case MoveSeq.moveIndex m currentPos of
       Just (even -> True) -> black
       Just _ -> white
@@ -112,7 +112,7 @@ handleEvent _ _ model evt = case evt of
 
   NewLib newLib -> updateLib (const newLib)
   
-  BoardClick m btn _ -> handleClick m btn
+  BoardClick m btn count -> handleClick m btn count
   RemovePos -> updateLib Lib.remove
 
   BoardText m t -> updateLib <| Lib.addBoardText m t
@@ -146,9 +146,11 @@ handleEvent _ _ model evt = case evt of
     putposErr :: Maybe MoveSeq -> IO MoveSeq
     putposErr = maybe (error "Failed to parse MoveSeq") pure
 
-    handleClick m BtnLeft = updateLib <| Lib.addMove m
-    handleClick m BtnMiddle = one <| Event <| StartEditing m
-    handleClick _ BtnRight = updateLib <| Lib.back
+    handleClick m BtnLeft count = updateLib <| case count of
+      1 -> Lib.addMove m
+      _ -> Lib.toMove m
+    handleClick m BtnMiddle _ = one <| Event <| StartEditing m
+    handleClick _ BtnRight _ = updateLib <| Lib.back
 
     oneTask = one <. Task
 

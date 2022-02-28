@@ -34,6 +34,9 @@ applyAll = foldl' (.>) id
 applyIf :: (a -> Bool) -> (a -> a) -> a -> a
 applyIf p f x = if p x then f x else x
 
+applyWhen :: Bool -> (a -> a) -> a -> a
+applyWhen b = applyIf <| const b
+
 -- | Given a predicate p, function f and values x and y: if p x y is true, return f x y; otherwise, return y
 applyIf2 :: (a -> b -> Bool) -> (a -> b -> b) -> a -> b -> b -- am I going insane?
 applyIf2 p f x = applyIf (p x) (f x)

@@ -61,6 +61,9 @@ empty =
 back :: Lib -> Lib
 back = over moves MoveSeq.back
 
+toMove :: Move -> Lib -> Lib
+toMove m = moves %~ MoveSeq.toMove m
+
 -- | /O(log n)./ Add a position with default (blank) MoveInfo to the lib.
 -- Does not overwrite the position if it already exists.
 addPosDef :: MoveSeq -> Lib -> Lib
