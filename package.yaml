@@ -28,8 +28,8 @@ dependencies:
   - flow
   - Hclip
   - ilist
-  - monomer
   - lens
+  - monomer
   - relude
   - text
   - unordered-containers
