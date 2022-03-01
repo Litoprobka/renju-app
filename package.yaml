@@ -30,6 +30,7 @@ dependencies:
   - ilist
   - lens
   - monomer
+  - process
   - relude
   - text
   - unordered-containers

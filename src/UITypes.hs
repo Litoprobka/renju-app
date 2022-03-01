@@ -36,6 +36,7 @@ data AppEvent
   | Putpos MoveSeq
   | Undo
   | Redo
+  | Screenshot
   deriving (Eq, Show)
 
 data EditType

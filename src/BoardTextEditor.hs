@@ -23,9 +23,9 @@ buildUI _ _ =
       textField boardText,
       spacer,
       hstack [
-        button "Cancel" Cancel,
+        mainButton "Save" Save,
         filler,
-        button "Save" Save
+        button "Cancel" Cancel
       ]
     ]
 

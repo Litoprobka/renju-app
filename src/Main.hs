@@ -12,6 +12,7 @@ import Move (Move)
 import CLI (loadLib, saveLib, LibLoadError(..))
 import qualified UndoRedoList as URList
 import System.Hclip
+import System.Process (callCommand)
 import UITypes
 import BoardTextEditor (boardTextEditor)
 
@@ -133,6 +134,9 @@ handleEvent _ _ model evt = case evt of
   Putpos ms -> updateLib <| Lib.addPosRec ms
   Undo -> updateLibStates URList.undo
   Redo -> updateLibStates URList.redo
+
+  Screenshot -> oneTask <| Blank <$ callCommand "import -window \"$(xdotool getwindowfocus -f)\" screenshot.png && xclip -sel clip -t image/png screenshot.png" -- TODO: use ImageMagick as library, don't use the xdotools workaround
+
   where
     updateModel lens f = [ Model (model |> lens %~ f) ]
     updateLibStates = updateModel libStates
@@ -181,4 +185,5 @@ defaultShortcuts model = [
   , ("C-s", SaveDefaultLib) -- placeholder
   , ("C-c", Getpos)
   , ("C-v", Paste)
+  , ("C-p", Screenshot)
   ]
