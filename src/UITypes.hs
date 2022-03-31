@@ -18,10 +18,18 @@ data AppModel = AppModel {
   _editing :: EditType
 } deriving (Eq, Show)
 
+-- | Configuration and runtime information
+data Config = Config {
+  _resources :: Text, -- | where app assets are stored
+  _dataHome :: Text   -- | XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
+}
+
+type App a = Reader Config a
+
 data AppEvent
   = LoadDefaultLib
   | SaveDefaultLib
-  | Blank
+  | NOOP
   | NewLib Lib
   | BoardClick Move Button Int
   | Rotate
@@ -47,7 +55,14 @@ data EditType
 type AppWenv = WidgetEnv AppModel AppEvent
 type AppNode = WidgetNode AppModel AppEvent
 
+makeLenses 'Config
 makeLenses 'AppModel
+
+-- not sure if this function belongs in UITypes
+getResourcesDir :: App Text
+getResourcesDir =
+  ask <&> view resources
+
 
 data BTEvent
   = Save

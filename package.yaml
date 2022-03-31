@@ -27,6 +27,7 @@ dependencies:
   - directory
   - flow
   - Hclip
+  - hsinstall
   - ilist
   - lens
   - monomer

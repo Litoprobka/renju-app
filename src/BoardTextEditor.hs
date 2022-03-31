@@ -8,7 +8,7 @@ import Monomer
 import UITypes
 
 boardTextEditor :: Move -> Text -> AppNode
-boardTextEditor m bt = compositeV "boardTextEditor" (BTModel m bt) (const Blank) buildUI handleEvent
+boardTextEditor m bt = compositeV "boardTextEditor" (BTModel m bt) (const NOOP) buildUI handleEvent
 
 buildUI :: BTWenv -> BTModel -> BTNode
 buildUI _ _ =

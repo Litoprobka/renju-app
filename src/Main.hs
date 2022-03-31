@@ -11,24 +11,34 @@ import qualified Move
 import Move (Move)
 import CLI (loadLib, saveLib, LibLoadError(..))
 import qualified UndoRedoList as URList
+
 import System.Hclip
 import System.Process (callCommand)
 import UITypes
 import BoardTextEditor (boardTextEditor)
+import HSInstall.Paths (getShareDir)
+import Paths_renju_app (getDataDir)
+import System.Environment (lookupEnv, getEnv)
+import System.Directory (createDirectoryIfMissing)
 
 import Monomer
 
-boardNode :: Lib -> Move -> AppNode
+imageWithDir :: WidgetEvent e => Text -> [ImageCfg e] -> App (WidgetNode s e)
+imageWithDir path cfg = do
+  dir <- getResourcesDir
+  pure <| image_ (dir <> path) cfg
+
+boardNode :: Lib -> Move -> App AppNode
 boardNode l m =
-  tooltip' <|
-  box_ [onBtnPressed <| BoardClick m] <|
-  zstack [
+  tooltip' <$>
+  box_ [onBtnPressed <| BoardClick m] <$>
+  zstack <$> (sequence <| [
     stoneImage,
-    label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor color]
-  ]
+    pure <| label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor color]
+  ])
   where
   currentPos = view Lib.moves l
-  stoneImage = image_ ("./assets/" <> stoneAsset <> ".png") [alignCenter, alignMiddle, fitEither]
+  stoneImage = imageWithDir ("/resources/" <> stoneAsset <> ".png") [alignCenter, alignMiddle, fitEither]
   stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
     Nothing
       | moveText /= "" 
@@ -63,10 +73,10 @@ boardNode l m =
     Just "" -> id
     Just comment -> tooltip comment
 
-boardImage :: AppNode
-boardImage = image_ "./assets/board.png" [fitFill]
+boardImage :: App AppNode
+boardImage = imageWithDir "/resources/board.png" [fitFill]
 
-boardGrid :: Lib -> AppNode
+boardGrid :: Lib -> App AppNode
 boardGrid l =
   [0..14]
   <&> (\y ->
@@ -74,21 +84,24 @@ boardGrid l =
     <&> (`Move.fromIntPartial` y)
     <&> boardNode l
   )
-  |> reverse
-  |> map hgrid
-  |> vgrid
+  & reverse
+  <&> sequence & sequence
+  <&> map hgrid
+  <&> vgrid
 
 buildUI
-  :: AppWenv
+  :: Config
+  -> AppWenv
   -> AppModel
   -> AppNode
-buildUI _ model = widgetTree where
+buildUI cfg _ model = widgetTree where
   widgetTree = keystroke (defaultShortcuts model) <|
-    zstack [
+    zstack <|
+    flip runReader cfg <|
+    sequence <| [
       boardImage,
       boardGrid (model ^. lib),
-      btEditor `nodeVisible` model ^. isEditing
-      
+      pure <| btEditor `nodeVisible` model ^. isEditing
     ]
 
   btEditor = boardTextEditor boardTextNodeOrDef (model ^. lib |> Lib.getBoardText boardTextNodeOrDef |> fromMaybe "")
@@ -99,17 +112,18 @@ buildUI _ model = widgetTree where
 
 
 handleEvent
-  :: AppWenv
+  :: Config -- ^ Data directory
+  -> AppWenv
   -> AppNode
   -> AppModel
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
-handleEvent _ _ model evt = case evt of
-  Blank -> []
-  LoadDefaultLib -> oneTask <| NewLib <$> (throwError =<< loadLib "lib-autosave")
+handleEvent (Config _ dataHome) _ _ model evt = case evt of
+  NOOP -> []
+  LoadDefaultLib -> oneTask <| NewLib <$> (throwError =<< loadLib (dataHome <> "/lib-autosave"))
   
-  SaveDefaultLib -> oneTask <| Blank <$
-    when (not <| Lib.isEmpty (model ^. lib)) (saveLib "lib-autosave" (model ^. lib))
+  SaveDefaultLib -> oneTask <| NOOP <$
+    when (not <| Lib.isEmpty (model ^. lib)) (saveLib (dataHome <> "/lib-autosave") (model ^. lib))
 
   NewLib newLib -> updateLib (const newLib)
   
@@ -124,7 +138,7 @@ handleEvent _ _ model evt = case evt of
   Rotate -> updateIfNotEditing Lib.rotate
   Mirror -> updateIfNotEditing Lib.mirror
   Comment t -> updateLib <| Lib.addComment t
-  Getpos -> one <| Task <| Blank <$ setClipboard (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
+  Getpos -> one <| Task <| NOOP <$ setClipboard (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
 
   Paste -> one <| Task <| Putpos <$> 
     (getClipboard
@@ -135,13 +149,14 @@ handleEvent _ _ model evt = case evt of
   Undo -> updateLibStates URList.undo
   Redo -> updateLibStates URList.redo
 
-  Screenshot -> oneTask <| Blank <$ callCommand "import -window \"$(xdotool getwindowfocus -f)\" screenshot.png && xclip -sel clip -t image/png screenshot.png" -- TODO: use ImageMagick as library, don't use the xdotools workaround
+  Screenshot -> oneTask <| NOOP <$ callCommand (toString <|
+    "import -window \"$(xdotool getwindowfocus -f)\" " <> dataHome <> "/screenshot.png && xclip -sel clip -t image/png " <> dataHome <> "/screenshot.png") -- TODO: use ImageMagick as a library, don't use the xdotools workaround
 
   where
     updateModel lens f = [ Model (model |> lens %~ f) ]
     updateLibStates = updateModel libStates
     updateLib = updateLibStates <. URList.update
-    updateIfNotEditing f = join [ updateLib f | not <| model ^. isEditing ] -- the use of join is a bit of ugly
+    updateIfNotEditing f = join [ updateLib f | not <| model ^. isEditing ] -- the use of join is a bit ugly
 
     throwError :: Either LibLoadError Lib -> IO Lib
     throwError (Left err) = error <| show err
@@ -160,17 +175,28 @@ handleEvent _ _ model evt = case evt of
 
 main :: IO ()
 main = do
-  startApp model handleEvent buildUI config
+  rDir <- fromString <$> getShareDir getDataDir
+
+  dataHome <- (lookupEnv "XDG_DATA_HOME"
+     &  flip whenNothingM (getEnv "HOME" <&> (<> "/.local/share"))) -- assumes that $HOME is always set
+    <&> fromString
+    <&> (<> "/renju-app")
+
+  createDirectoryIfMissing True (toString dataHome) -- create $XDG_DATA_HOME/renju-app
+
+  let appCfg = Config rDir dataHome
+      config = [
+          appWindowTitle "R",
+          appTheme darkTheme,
+          appFontDef "Regular" <| rDir <> "/resources/fonts/Roboto-Regular.ttf",
+          appInitEvent LoadDefaultLib,
+          appDisposeEvent SaveDefaultLib,
+          appWindowState <| MainWindowNormal (765, 765),
+          appWindowResizable False
+        ]
+
+  startApp model (handleEvent appCfg) (buildUI appCfg) config
   where
-    config = [
-      appWindowTitle "R",
-      appTheme darkTheme,
-      appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf",
-      appInitEvent LoadDefaultLib,
-      appDisposeEvent SaveDefaultLib,
-      appWindowState <| MainWindowNormal (765, 765),
-      appWindowResizable False
-      ]
     model = AppModel (URList.one Lib.empty) ENone
 
 defaultShortcuts :: AppModel -> [(Text, AppEvent)]

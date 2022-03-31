@@ -9,6 +9,8 @@ dist-docs.*/
 *.prof
 *.ps
 *.ser
+*.AppImage
 cabal.project.local*
 lib-autosave
 screenshot.png
+app.AppDir/
