@@ -30,18 +30,18 @@ imageWithDir path cfg = do
 
 boardNode :: Lib -> Move -> App AppNode
 boardNode l m =
-  tooltip' <$>
-  box_ [onBtnPressed <| BoardClick m] <$>
-  zstack <$> (sequence <| [
+  tooltip'
+  <. box_ [onBtnPressed <| BoardClick m]
+  <. zstack <$> sequence [
     stoneImage,
     pure <| label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor color]
-  ])
+  ]
   where
   currentPos = view Lib.moves l
   stoneImage = imageWithDir ("/resources/" <> stoneAsset <> ".png") [alignCenter, alignMiddle, fitEither]
   stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
     Nothing
-      | moveText /= "" 
+      | moveText /= ""
       || noNextMove -> "blank"
       | otherwise -> "move-exists-" <> case currentPos ^. MoveSeq.nextColor of
       Black -> "black"
@@ -97,7 +97,7 @@ buildUI
 buildUI cfg _ model = widgetTree where
   widgetTree = keystroke (defaultShortcuts model) <|
     zstack <|
-    flip runReader cfg <|
+    usingReader cfg <|
     sequence <| [
       boardImage,
       boardGrid (model ^. lib),
@@ -121,36 +121,38 @@ handleEvent
 handleEvent (Config _ dataHome) _ _ model evt = case evt of
   NOOP -> []
   LoadDefaultLib -> oneTask <| NewLib <$> (throwError =<< loadLib (dataHome <> "/lib-autosave"))
-  
+
   SaveDefaultLib -> oneTask <| NOOP <$
     when (not <| Lib.isEmpty (model ^. lib)) (saveLib (dataHome <> "/lib-autosave") (model ^. lib))
 
-  NewLib newLib -> updateLib (const newLib)
-  
+  NewLib newLib -> updateIfNotReadOnly (const newLib)
+
   BoardClick m btn count -> handleClick m btn count
-  RemovePos -> updateLib Lib.remove
+  RemovePos -> updateIfNotReadOnly Lib.remove
 
-  BoardText m t -> updateLib <| Lib.addBoardText m t
+  BoardText m t -> updateIfNotReadOnly <| Lib.addBoardText m t
 
-  StartEditing m -> updateModel editing (const <| EBoardText m)
+  StartEditing m -> whenNotReadOnly <| updateModel editing (const <| EBoardText m)
   StopEditing -> updateModel editing (const <| ENone)
 
   Rotate -> updateIfNotEditing Lib.rotate
   Mirror -> updateIfNotEditing Lib.mirror
   Comment t -> updateLib <| Lib.addComment t
-  Getpos -> one <| Task <| NOOP <$ setClipboard (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
+  Getpos -> oneTask <| NOOP <$ setClipboard (toString <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
 
-  Paste -> one <| Task <| Putpos <$> 
+  Paste -> oneTask <| Putpos <$>
     (getClipboard
     <&> fromString .> MoveSeq.fromGetpos
     >>= putposErr)
 
-  Putpos ms -> updateLib <| Lib.addPosRec ms
-  Undo -> updateLibStates URList.undo
-  Redo -> updateLibStates URList.redo
+  Putpos ms -> updateIfNotReadOnly <| Lib.addPosRec ms
+  Undo -> whenNotReadOnly <| updateLibStates URList.undo
+  Redo -> whenNotReadOnly <| updateLibStates URList.redo
 
   Screenshot -> oneTask <| NOOP <$ callCommand (toString <|
     "import -window \"$(xdotool getwindowfocus -f)\" " <> dataHome <> "/screenshot.png && xclip -sel clip -t image/png " <> dataHome <> "/screenshot.png") -- TODO: use ImageMagick as a library, don't use the xdotools workaround
+
+  ToggleReadOnly -> updateModel readOnly not
 
   where
     updateModel lens f = [ Model (model |> lens %~ f) ]
@@ -165,24 +167,36 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
     putposErr :: Maybe MoveSeq -> IO MoveSeq
     putposErr = maybe (error "Failed to parse MoveSeq") pure
 
-    handleClick m BtnLeft count = updateLib <| case count of
-      1 -> Lib.addMove m
-      _ -> Lib.toMove m
+    handleClick m BtnLeft count = updateLib <| (case count of
+      1 -> if model ^. readOnly
+        then Lib.nextMove
+        else Lib.addMove
+      _ -> Lib.toMove) m
     handleClick m BtnMiddle _ = one <| Event <| StartEditing m
     handleClick _ BtnRight _ = updateLib <| Lib.back
 
     oneTask = one <. Task
+    
+    whenNotReadOnly actions =
+      if model ^. readOnly
+        then [ Event <| NOOP ]
+        else actions
+    updateIfNotReadOnly = whenNotReadOnly <. updateLib
+
 
 main :: IO ()
 main = do
   rDir <- fromString <$> getShareDir getDataDir
 
-  dataHome <- (lookupEnv "XDG_DATA_HOME"
-     &  flip whenNothingM (getEnv "HOME" <&> (<> "/.local/share"))) -- assumes that $HOME is always set
+  dataHome <- 
+    lookupEnv "RENJU_APP_DIR"
+     & onNothingM
+        (lookupEnv "XDG_DATA_HOME"
+         &  onNothingM (getEnv "HOME" <&> (<> "/.local/share")) -- assumes that $HOME is always set
+        <&> (<> "/renju-app"))
     <&> fromString
-    <&> (<> "/renju-app")
 
-  createDirectoryIfMissing True (toString dataHome) -- create $XDG_DATA_HOME/renju-app
+  createDirectoryIfMissing True (toString dataHome) -- create $RENJU_APP_DIR / $XDG_DATA_HOME/renju-app
 
   let appCfg = Config rDir dataHome
       config = [
@@ -197,7 +211,8 @@ main = do
 
   startApp model (handleEvent appCfg) (buildUI appCfg) config
   where
-    model = AppModel (URList.one Lib.empty) ENone
+    model = AppModel (URList.one Lib.empty) ENone False
+    onNothingM = flip whenNothingM
 
 defaultShortcuts :: AppModel -> [(Text, AppEvent)]
 defaultShortcuts model = [
@@ -212,4 +227,6 @@ defaultShortcuts model = [
   , ("C-c", Getpos)
   , ("C-v", Paste)
   , ("C-p", Screenshot)
+  , ("C-S-r", ToggleReadOnly)
+  , ("C-S-m", ToggleReadOnly)
   ]

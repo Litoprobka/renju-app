@@ -23,21 +23,21 @@ infixl 9 ..> -- :> is taken
 (..>) :: (a -> b -> c) -> (c -> d) -> a -> b -> d
 (..>) f1 f2 x = f1 x .> f2
 
--- | Given a function f and a value x, try applying f to x. If the result is Just y, return y; otherwise, return x
+-- | Given a function `f` and a value `x`, try applying `f` to `x`. If the result is `Just y`, return `y`; otherwise, return `x`
 tryApply :: (a -> Maybe a) -> a -> a
 tryApply f x = fromMaybe x (f x)
 
 applyAll :: [a -> a] -> a -> a
 applyAll = foldl' (.>) id
 
--- | Given a predicate p, function f and value x: if p x is true, return f x; otherwise, return x
+-- | Given a predicate `p`, function `f` and value `x`: if `p x` is true, return `f x`; otherwise, return `x`
 applyIf :: (a -> Bool) -> (a -> a) -> a -> a
 applyIf p f x = if p x then f x else x
 
 applyWhen :: Bool -> (a -> a) -> a -> a
 applyWhen b = applyIf <| const b
 
--- | Given a predicate p, function f and values x and y: if p x y is true, return f x y; otherwise, return y
+-- | Given a predicate `p`, function `f` and values `x` and `y`: if `p x y` is true, return `f x y`; otherwise, return `y`
 applyIf2 :: (a -> b -> Bool) -> (a -> b -> b) -> a -> b -> b -- am I going insane?
 applyIf2 p f x = applyIf (p x) (f x)
 

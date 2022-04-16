@@ -15,13 +15,14 @@ import Monomer
 
 data AppModel = AppModel {
   _libStates :: UndoRedoList Lib,
-  _editing :: EditType
+  _editing :: EditType,
+  _readOnly :: Bool
 } deriving (Eq, Show)
 
 -- | Configuration and runtime information
 data Config = Config {
-  _resources :: Text, -- | where app assets are stored
-  _dataHome :: Text   -- | XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
+  _resources :: Text, -- ^ where app assets are stored
+  _dataHome :: Text   -- ^ XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
 }
 
 type App a = Reader Config a
@@ -45,6 +46,7 @@ data AppEvent
   | Undo
   | Redo
   | Screenshot
+  | ToggleReadOnly
   deriving (Eq, Show)
 
 data EditType

@@ -8,7 +8,7 @@ import Data.List (elemIndex, minimum)
 import Data.List.Index (ipartition, deleteAt)
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
-import Data.Text (snoc)
+import Data.Text (snoc, toLower)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Foldable (foldr')
 
@@ -97,7 +97,7 @@ back ms = case view moveList ms of
     m : moves -> ms
         |> set moveList moves
         |> updateHashes (-) (flipStone .> hashMult) m
-
+-- | /O(n)./ Given Move `m`, returns a position where `m` is the last move, or the same position if it does not contain `m`.
 toMove :: Move -> MoveSeq -> MoveSeq
 toMove m ms = go ms where
         go ms' =
@@ -115,7 +115,8 @@ fromList = foldr' makeMove' MoveSeq.empty
 -- | /O(n)./ Construct a MoveSeq from a string in getpos format ("h8i9j6i8k8")
 fromGetpos :: Text -> Maybe MoveSeq
 fromGetpos =
-    (`snoc` 'a')
+    toLower
+    .> (`snoc` 'a')
     .> toString
     .> foldl' f ("", [])
     .> snd
@@ -161,7 +162,7 @@ stoneAt move =
         (odd -> True) -> Black
         _ -> White
 
--- | /O(n)./ Checks if a move does not in a position
+-- | /O(n)./ Checks if a move does not exist in a position
 notIn :: Move -> MoveSeq -> Bool
 notIn move = stoneAt move .> isNothing
 
