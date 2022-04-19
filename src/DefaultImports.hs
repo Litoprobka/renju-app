@@ -5,7 +5,7 @@ module DefaultImports (
     module Control.Lens
 ) where
 
-import Relude hiding (fromList)
+import Relude hiding (fromList, universe)
 import Flow
 import Utils
 import Control.Lens hiding ((.>), (<.), (|>), (<|), (.=), (??), uncons, snoc, transform, lens)

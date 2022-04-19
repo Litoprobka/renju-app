@@ -41,6 +41,7 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 extra-deps:
 - nanovg-0.8.0.0
+- relude-1.0.0.1
 - git: "https://github.com/fjvallarino/monomer"
   commit: "f4e4dddd99f063629a148b9717a05b2d9d9282d2"
 - git: "https://github.com/jetho/Hclip"
@@ -55,7 +56,7 @@ flags:
 # extra-package-dbs: []
 
 # Control whether we use the GHC we find on the path
-# system-ghc: true
+system-ghc: true
 #
 # Require a specific version of stack, using version ranges
 # require-stack-version: -any # Default
@@ -70,4 +71,4 @@ flags:
 # extra-lib-dirs: [/path/to/dir]
 #
 # Allow a newer minor version of GHC than the snapshot specifies
-# compiler-check: newer-minor
+compiler-check: newer-minor

@@ -18,8 +18,7 @@ import UITypes
 import BoardTextEditor (boardTextEditor)
 import HSInstall.Paths (getShareDir)
 import Paths_renju_app (getDataDir)
-import System.Environment (lookupEnv, getEnv)
-import System.Directory (createDirectoryIfMissing)
+import System.Directory (createDirectoryIfMissing, getXdgDirectory, XdgDirectory(XdgData))
 
 import Monomer
 
@@ -190,10 +189,7 @@ main = do
 
   dataHome <- 
     lookupEnv "RENJU_APP_DIR"
-     & onNothingM
-        (lookupEnv "XDG_DATA_HOME"
-         &  onNothingM (getEnv "HOME" <&> (<> "/.local/share")) -- assumes that $HOME is always set
-        <&> (<> "/renju-app"))
+     & onNothingM (getXdgDirectory XdgData "renju-app")
     <&> fromString
 
   createDirectoryIfMissing True (toString dataHome) -- create $RENJU_APP_DIR / $XDG_DATA_HOME/renju-app
