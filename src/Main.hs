@@ -9,7 +9,7 @@ import qualified MoveSeq
 import MoveSeq (Stone(..), MoveSeq)
 import qualified Move
 import Move (Move)
-import CLI (loadLib, saveLib, LibLoadError(..))
+import CLI (loadLib, saveLib, pickSubcommand, LibLoadError(..))
 import qualified UndoRedoList as URList
 
 import System.Hclip
@@ -119,10 +119,11 @@ handleEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent (Config _ dataHome) _ _ model evt = case evt of
   NOOP -> []
-  LoadDefaultLib -> oneTask <| NewLib <$> (throwError =<< loadLib (dataHome <> "/lib-autosave"))
+  LoadLib libFilePath -> oneTask <| NewLib <$> (throwError =<< loadLib libFilePath)
 
-  SaveDefaultLib -> oneTask <| NOOP <$
-    when (not <| Lib.isEmpty (model ^. lib)) (saveLib (dataHome <> "/lib-autosave") (model ^. lib))
+  SaveLib libFilePath -> oneTask <| NOOP <$
+    when (not <| Lib.isEmpty (model ^. lib)) (saveLib libFilePath (model ^. lib))
+  SaveCurrentLib -> one <| Event <| SaveLib (model ^. currentFile)
 
   NewLib newLib -> updateIfNotReadOnly (const newLib)
 
@@ -195,19 +196,21 @@ main = do
   createDirectoryIfMissing True (toString dataHome) -- create $RENJU_APP_DIR / $XDG_DATA_HOME/renju-app
 
   let appCfg = Config rDir dataHome
-      config = [
+      libPathOrDef = fromMaybe (dataHome <> "/lib-autosave")
+      config libFilePath = [
           appWindowTitle "R",
           appTheme darkTheme,
           appFontDef "Regular" <| rDir <> "/resources/fonts/Roboto-Regular.ttf",
-          appInitEvent LoadDefaultLib,
-          appDisposeEvent SaveDefaultLib,
+          appInitEvent <| LoadLib <| libPathOrDef libFilePath,
+          appDisposeEvent <| SaveCurrentLib,
           appWindowState <| MainWindowNormal (765, 765),
           appWindowResizable False
         ]
-
-  startApp model (handleEvent appCfg) (buildUI appCfg) config
+  
+  args <- getArgs
+  pickSubcommand args <| \libFilePath -> startApp (model <| libPathOrDef libFilePath) (handleEvent appCfg) (buildUI appCfg) (config libFilePath)
   where
-    model = AppModel (URList.one Lib.empty) ENone False
+    model = AppModel (URList.one Lib.empty) ENone False 
     onNothingM = flip whenNothingM
 
 defaultShortcuts :: AppModel -> [(Text, AppEvent)]
@@ -219,7 +222,7 @@ defaultShortcuts model = [
   , ("C-z", Undo)
   , ("C-S-z", Redo)
   , ("C-y", Redo)
-  , ("C-s", SaveDefaultLib) -- placeholder
+  , ("C-s", SaveCurrentLib) -- placeholder
   , ("C-c", Getpos)
   , ("C-v", Paste)
   , ("C-p", Screenshot)

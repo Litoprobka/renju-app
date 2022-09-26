@@ -9,7 +9,6 @@ import Move (Move)
 import qualified Move
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
-import qualified Data.ByteString.Lazy as BS (readFile, writeFile)
 
 -- very simple console-based UI that works with a single Lib
 -- I'm writing this to figure out what the GUI would need
@@ -41,16 +40,23 @@ loadLib filePath = do
     if not fileExists then
             pure <| Left FileNotFound
         else
-            BS.readFile (toString filePath)
+            readFileLBS (toString filePath)
             <&> decode
             <&> \case
                 Just newLib -> Right newLib
                 Nothing -> Left ParseFailure
 
+loadLib' :: Text -> IO Lib
+loadLib' =
+    loadLib
+    >=> \case
+        Left err -> fail <| show err
+        Right lib -> pure lib
+
 saveLib :: Text -> Lib -> IO ()
 saveLib filePath =
     encodePretty
-    .> BS.writeFile (toString filePath)
+    .> writeFileLBS (toString filePath)
 
 repl :: Lib -> IO ()
 repl l = do
@@ -61,7 +67,7 @@ repl l = do
         "back" -> repl <| back l
         "remove" -> repl (removeR (l^.moves) l |> back)
 
-        "save" `WithArg` filePath -> (encodePretty l |> BS.writeFile (toString filePath)) >> repl l
+        "save" `WithArg` filePath -> (encodePretty l |> writeFileLBS (toString filePath)) >> repl l
         "load" `WithArg` filePath ->
             loadLib filePath
             >>= \case
@@ -81,3 +87,26 @@ repl l = do
 
 startRepl :: IO ()
 startRepl = repl Lib.empty
+
+pickSubcommand :: [String] -> (Maybe Text -> IO ()) -> IO ()
+pickSubcommand args gui = case args of
+    arg : rest | arg == "cli" -> toFileName rest & loadLib' >>= repl
+               | arg == "gui" -> gui <| Just <| toFileName rest
+               | arg == "merge" -> merge rest
+    _ -> gui Nothing
+    where
+        toFileName = map fromString .> unwords
+        merge =
+            reverse
+            .> uncons
+            .> (\case
+            Nothing -> pass
+            Just (output, inputs) -> reverse inputs
+                <&> fromString
+                <&> loadLib'
+                 &  sequence
+                <&> foldr Lib.merge Lib.empty
+                >>= saveLib (fromString output)
+                )
+            
+            

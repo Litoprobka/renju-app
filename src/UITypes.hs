@@ -16,7 +16,8 @@ import Monomer
 data AppModel = AppModel {
   _libStates :: UndoRedoList Lib,
   _editing :: EditType,
-  _readOnly :: Bool
+  _readOnly :: Bool,
+  _currentFile :: Text
 } deriving (Eq, Show)
 
 -- | Configuration and runtime information
@@ -28,8 +29,9 @@ data Config = Config {
 type App a = Reader Config a
 
 data AppEvent
-  = LoadDefaultLib
-  | SaveDefaultLib
+  = LoadLib Text
+  | SaveLib Text
+  | SaveCurrentLib
   | NOOP
   | NewLib Lib
   | BoardClick Move Button Int

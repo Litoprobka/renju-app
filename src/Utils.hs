@@ -42,5 +42,9 @@ applyIf2 :: (a -> b -> Bool) -> (a -> b -> b) -> a -> b -> b -- am I going insan
 applyIf2 p f x = applyIf (p x) (f x)
 
 safeHead :: [a] -> Maybe a
-safeHead = nonEmpty <.>> head
+safeHead = listToMaybe
+
+maxBy :: Ord b => (a -> b) -> a -> a -> a
+maxBy f x y | f x >= f y = x
+            | otherwise = y
 

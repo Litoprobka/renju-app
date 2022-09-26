@@ -42,4 +42,7 @@ spec = do
         it "should not break the hash" do
             forM_ transformations \f -> d11 `shouldBe` transform f d11
             forM_ transformations \f -> makeMove' (ft "i9") d11 `shouldBe` makeMove' (f <| ft "i9") (transform f d11)
+    describe "fromGetpos" do
+        it "should work with long getpos" do
+            (toGetpos <. fgp) "h8h9i6f8h6g9i9h10e7f7j6g6f6g7g8h5e8e9f9h7i8j12i11j8j7k6h4j3i4g5i5k7j4k4k3l2f4g4g3f2e5k5k8d6h11i12k11j11j9" `shouldBe` "h8h9i6f8h6g9i9h10e7f7j6g6f6g7g8h5e8e9f9h7i8j12i11j8j7k6h4j3i4g5i5k7j4k4k3l2f4g4g3f2e5k5k8d6h11i12k11j11j9"
         

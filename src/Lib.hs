@@ -11,6 +11,7 @@ import qualified Move
 import MoveSeq (Stone(..), MoveSeq)
 import qualified MoveSeq
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text as Text (length)
 import Data.Default ( Default(..) )
 import Data.Aeson
 import Data.List.NonEmpty ((!!))
@@ -113,6 +114,13 @@ removeR pos =
 remove :: Lib -> Lib
 remove l = l |> removeR (l^.moves) |> back
 
+-- | Merge two libs, prioritising positions, comments and board text from the first one
+merge :: Lib -> Lib -> Lib
+merge l1 l2 = lib %~ HashMap.unionWith mergeMoveInfo (l2 ^. lib) <| l1 where
+    mergeMoveInfo m1 m2 =
+        MoveInfo (maxBy Text.length (m1 ^. comment) (m2 ^. comment))
+        <| HashMap.unionWith (maxBy Text.length) (m1 ^. boardText) (m2 ^. boardText)
+
 -- * Adding / updating comments and board text
 
 -- | /O(log n)./ Apply a (MoveInfo -> MoveInfo) function to a given move in a lib
@@ -127,7 +135,9 @@ addComment t l = updatePos (set comment t) (l^.moves) l
 addBoardText :: Move -> Text -> Lib -> Lib
 addBoardText m t l = updatePos (over boardText upd) pos l where
     btpos = MoveSeq.makeMove' m pos
-    upd = if btpos /= pos then HashMap.insert btpos t else id
+    upd | btpos == pos = id
+        | t == "" = HashMap.delete btpos
+        | otherwise = HashMap.insert btpos t
     pos = l^.moves
 
 -- * Queries
