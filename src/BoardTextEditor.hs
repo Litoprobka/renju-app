@@ -8,9 +8,9 @@ import Monomer
 import UITypes
 
 boardTextEditor :: Move -> Text -> AppNode
-boardTextEditor m bt = compositeV "boardTextEditor" (BTModel m bt) (const NOOP) buildUI handleEvent
+boardTextEditor m bt = compositeV "boardTextEditor" (BTModel m bt) (const NOOP') buildUI handleEvent
 
-buildUI :: BTWenv -> BTModel -> BTNode
+buildUI :: WidgetEnv BTModel BTEvent -> BTModel -> BTNode
 buildUI _ _ =
     box_ [alignMiddle, alignCenter] <|
     themeSwitch_ darkTheme [themeClearBg] <| -- TODO: add curved edges
@@ -36,3 +36,4 @@ handleEvent _ _ BTModel{..} evt = case evt of
     Report <| BoardText _move _boardText
     ]
   Cancel -> one <| Report StopEditing
+  NOOP' -> []

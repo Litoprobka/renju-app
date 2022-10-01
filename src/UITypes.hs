@@ -71,6 +71,7 @@ getResourcesDir =
 data BTEvent
   = Save
   | Cancel
+  | NOOP'
   deriving (Show, Eq)
 
 data BTModel = BTModel {

@@ -152,7 +152,7 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
   Screenshot -> oneTask <| NOOP <$ callCommand (toString <|
     "import -window \"$(xdotool getwindowfocus -f)\" " <> dataHome <> "/screenshot.png && xclip -sel clip -t image/png " <> dataHome <> "/screenshot.png") -- TODO: use ImageMagick as a library, don't use the xdotools workaround
 
-  ToggleReadOnly -> updateModel readOnly not
+  ToggleReadOnly -> updateModel UITypes.readOnly not
 
   where
     updateModel lens f = [ Model (model |> lens %~ f) ]
@@ -168,7 +168,7 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
     putposErr = maybe (error "Failed to parse MoveSeq") pure
 
     handleClick m BtnLeft count = updateLib <| (case count of
-      1 -> if model ^. readOnly
+      1 -> if model ^. UITypes.readOnly
         then Lib.nextMove
         else Lib.addMove
       _ -> Lib.toMove) m
@@ -178,7 +178,7 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
     oneTask = one <. Task
     
     whenNotReadOnly actions =
-      if model ^. readOnly
+      if model ^. UITypes.readOnly
         then [ Event <| NOOP ]
         else actions
     updateIfNotReadOnly = whenNotReadOnly <. updateLib

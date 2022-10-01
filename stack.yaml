@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-18.28
+resolver: nightly-2022-09-30
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -41,11 +41,10 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 extra-deps:
 - nanovg-0.8.0.0
-- relude-1.0.0.1
 - git: "https://github.com/fjvallarino/monomer"
-  commit: "f4e4dddd99f063629a148b9717a05b2d9d9282d2"
+  commit: "cb17cb553c76eea97718ff3953e516868c2b7087"
 - git: "https://github.com/jetho/Hclip"
-  commit: "c305dcbcc82f50f422fd96f2e29352c33d989907"
+  commit: "16795d473acb33dfb8d425ba22ad1016d3440044"
 
 # Override default flag values for local packages and extra-deps
 flags:
