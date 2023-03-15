@@ -1,15 +1,19 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, DataKinds #-}
 
 module Move where
 
 import DefaultImports
 import Data.List (elemIndex, (!!))
+import qualified Data.Vector.Generic.Sized as S
+import Data.Vector (Vector)
 
 -- | Represents a coordinate point on a board
 data Move = Move 
     { _x :: Int
     , _y :: Int }
     deriving (Show, Eq, Ord)
+
+type Vec8 = S.Vector Vector 8
 
 makeLenses 'Move
 
@@ -71,8 +75,8 @@ hashPart m =
 -- * Other
 
 -- | All mirroring and rotation functions that maintain the relative position of a move on the board
-transformations :: NonEmpty (Move -> Move)
-transformations = fromMaybe (error "impossible") <| nonEmpty [ -- dependent types...
+transformations :: Vec8 (Move -> Move)
+transformations = S.fromTuple (
         id
         , invert x
         , invert y
@@ -81,7 +85,7 @@ transformations = fromMaybe (error "impossible") <| nonEmpty [ -- dependent type
         , swapxy .> invert x
         , swapxy .> invert y
         , swapxy .> invert x .> invert y
-    ]
+    )
     where
         invert coord = over coord (14-)
         swapxy (Move x' y') = Move y' x'

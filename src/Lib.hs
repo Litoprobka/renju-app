@@ -14,7 +14,7 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as Text (length)
 import Data.Default ( Default(..) )
 import Data.Aeson
-import Data.List.NonEmpty ((!!))
+import qualified Data.Vector.Generic.Sized as S (index)
 import Data.Foldable (foldr')
 
 -- | Additional info for a position, such as board text and comments
@@ -205,7 +205,7 @@ transform :: (Move -> Move) -> Lib -> Lib
 transform f = moves %~ MoveSeq.transform f
 
 mirror :: Lib -> Lib
-mirror = transform <| Move.transformations !! 1
+mirror = transform <| Move.transformations `S.index` 1
 
 rotate :: Lib -> Lib
-rotate = transform <| Move.transformations !! 6
+rotate = transform <| Move.transformations `S.index` 6

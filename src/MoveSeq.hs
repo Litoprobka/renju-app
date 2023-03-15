@@ -1,16 +1,17 @@
-{-# LANGUAGE TemplateHaskell, LambdaCase, ViewPatterns, GeneralisedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell, LambdaCase, ViewPatterns, GeneralisedNewtypeDeriving, DataKinds #-}
 module MoveSeq where
 
 import DefaultImports
-import Move(Move)
+import Move(Move, Vec8)
 import qualified Move
-import Data.List (elemIndex, minimum)
+import Data.List (elemIndex)
 import Data.List.Index (ipartition, deleteAt)
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
 import Data.Text (snoc, toLower)
-import qualified Data.List.NonEmpty as NonEmpty
 import Data.Foldable (foldr')
+
+import qualified Data.Vector.Generic.Sized as S
 
 -- | A /seq/uence of /move/s, representing a position on the board.
 --
@@ -20,7 +21,7 @@ import Data.Foldable (foldr')
 data MoveSeq = MoveSeq { 
     _moveList :: [Move], -- even though the name is MoveSeq, I'm using List under the hood, since random access is not important
     _nextColor :: Stone,
-    _hashes :: NonEmpty LongHash -- ^ LongHashes of all positions symmetrical to the current one. Minimum of these is *the* LongHash of a position.
+    _hashes :: Vec8 LongHash -- ^ LongHashes of all positions symmetrical to the current one. Minimum of these is *the* LongHash of a position.
 } deriving Show
 
 -- | A numeric representation of move list w/o move order, used to compare and hash MoveSeq's
@@ -33,7 +34,7 @@ data Stone
 
 makeLenses 'MoveSeq
 hash :: Getting r MoveSeq LongHash
-hash = to <| minimum <. view hashes
+hash = to <| S.minimum <. view hashes
 
 -- * Instances
 instance Eq MoveSeq where
@@ -73,7 +74,7 @@ hashMult White = 2
 
 -- | /O(1)./ A MoveSeq with no moves.
 empty :: MoveSeq
-empty = MoveSeq [] Black (z :| replicate 7 z) where
+empty = MoveSeq [] Black (S.replicate z) where
     z = LongHash 0
 
 -- | /O(1)./ Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
@@ -209,7 +210,7 @@ toText f ms =
 -- | A helper function to update the hashes when changing a MoveSeq
 updateHashes :: (LongHash -> LongHash -> LongHash) -> (Stone -> Integer) -> Move -> MoveSeq -> MoveSeq
 updateHashes f mult move ms = ms
-    |> over hashes (NonEmpty.zipWith zf Move.transformations)
+    |> over hashes (S.zipWith zf Move.transformations)
     |> over nextColor flipStone
     where
     zf trns = flip f (fromIntegral <| (* mult (ms ^. nextColor)) <| Move.hashPart <| trns move)
