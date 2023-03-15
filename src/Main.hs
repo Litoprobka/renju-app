@@ -2,25 +2,26 @@
 
 module Main where
 
-import DefaultImports
+import           CLI              (LibLoadError (..), loadLib, pickSubcommand,
+                                   saveLib)
+import           DefaultImports
+import           Lib              (Lib)
 import qualified Lib
-import Lib (Lib)
-import qualified MoveSeq
-import MoveSeq (Stone(..), MoveSeq)
+import           Move             (Move)
 import qualified Move
-import Move (Move)
-import CLI (loadLib, saveLib, pickSubcommand, LibLoadError(..))
-import qualified UndoRedoList as URList
+import           MoveSeq          (MoveSeq, Stone (..))
+import qualified MoveSeq
+import           UITypes
+import qualified UndoRedoList     as URList
 
-import System.Hclip
-import System.Process (callCommand)
-import UITypes
-import BoardTextEditor (boardTextEditor)
-import HSInstall.Paths (getShareDir)
-import Paths_renju_app (getDataDir)
-import System.Directory (createDirectoryIfMissing, getXdgDirectory, XdgDirectory(XdgData))
-
-import Monomer
+import           BoardTextEditor  (boardTextEditor)
+import           HSInstall.Paths  (getShareDir)
+import           Monomer
+import           Paths_renju_app  (getDataDir)
+import           System.Directory (XdgDirectory (XdgData),
+                                   createDirectoryIfMissing, getXdgDirectory)
+import           System.Hclip
+import           System.Process   (callCommand)
 
 imageWithDir :: WidgetEvent e => Text -> [ImageCfg e] -> App (WidgetNode s e)
 imageWithDir path cfg = do
@@ -68,8 +69,8 @@ boardNode l m =
           White -> white
 
   tooltip' = case flip Lib.getCommentOf l <$> MoveSeq.makeMove m currentPos of -- MoveSeq.makeMove is useful for once
-    Nothing -> id
-    Just "" -> id
+    Nothing      -> id
+    Just ""      -> id
     Just comment -> tooltip comment
 
 boardImage :: App AppNode
@@ -107,7 +108,7 @@ buildUI cfg _ model = widgetTree where
 
   boardTextNodeOrDef = case model ^. editing of
     EBoardText m -> m
-    _ -> Move.fromIntPartial 0 0
+    _            -> Move.fromIntPartial 0 0
 
 
 handleEvent
@@ -161,7 +162,7 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
     updateIfNotEditing f = join [ updateLib f | not <| model ^. isEditing ] -- the use of join is a bit ugly
 
     throwError :: Either LibLoadError Lib -> IO Lib
-    throwError (Left err) = error <| show err
+    throwError (Left err)     = error <| show err
     throwError (Right newLib) = pure newLib
 
     putposErr :: Maybe MoveSeq -> IO MoveSeq
@@ -176,7 +177,7 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
     handleClick _ BtnRight _ = updateLib <| Lib.back
 
     oneTask = one <. Task
-    
+
     whenNotReadOnly actions =
       if model ^. UITypes.readOnly
         then [ Event <| NOOP ]
@@ -188,7 +189,7 @@ main :: IO ()
 main = do
   rDir <- fromString <$> getShareDir getDataDir
 
-  dataHome <- 
+  dataHome <-
     lookupEnv "RENJU_APP_DIR"
      & onNothingM (getXdgDirectory XdgData "renju-app")
     <&> fromString
@@ -206,11 +207,17 @@ main = do
           appWindowState <| MainWindowNormal (765, 765),
           appWindowResizable False
         ]
-  
+
   args <- getArgs
   pickSubcommand args <| \libFilePath -> startApp (model <| libPathOrDef libFilePath) (handleEvent appCfg) (buildUI appCfg) (config libFilePath)
   where
-    model = AppModel (URList.one Lib.empty) ENone False 
+    model file = AppModel
+      { _libStates = URList.one Lib.empty
+      , _editing = ENone
+      , _readOnly = False
+      , _currentFile = file
+      }
+
     onNothingM = flip whenNothingM
 
 defaultShortcuts :: AppModel -> [(Text, AppEvent)]

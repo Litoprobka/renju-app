@@ -1,6 +1,6 @@
 cabal-version: 2.0
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -30,6 +30,8 @@ library
       Utils
   other-modules:
       Paths_renju_app
+  autogen-modules:
+      Paths_renju_app
   hs-source-dirs:
       src
   default-extensions:
@@ -40,6 +42,7 @@ library
       Hclip
     , aeson
     , aeson-pretty
+    , atomic-write
     , base >=4.8 && <5
     , bytestring
     , data-default
@@ -70,6 +73,8 @@ executable app
       UndoRedoList
       Utils
       Paths_renju_app
+  autogen-modules:
+      Paths_renju_app
   hs-source-dirs:
       src
   default-extensions:
@@ -80,6 +85,7 @@ executable app
       Hclip
     , aeson
     , aeson-pretty
+    , atomic-write
     , base >=4.8 && <5
     , bytestring
     , data-default
@@ -105,6 +111,8 @@ test-suite spec
       MoveSeqSpec
       MoveSpec
       Paths_renju_app
+  autogen-modules:
+      Paths_renju_app
   hs-source-dirs:
       test
   default-extensions:
@@ -114,6 +122,7 @@ test-suite spec
       Hclip
     , aeson
     , aeson-pretty
+    , atomic-write
     , base >=4.8 && <5
     , bytestring
     , data-default

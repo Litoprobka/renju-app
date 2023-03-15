@@ -1,27 +1,28 @@
-name:                renju-app # placeholder name
-version:             0.1.0.0
+name: renju-app # placeholder name
+version: 0.1.0.0
 #synopsis:
 #description:
-homepage:            https://github.com/litoprobka/renju-app#readme
-license:             BSD2
-author:              Litoprobka
+homepage: https://github.com/litoprobka/renju-app#readme
+license: BSD2
+author: Litoprobka
 #maintainer:          example@example.com
-copyright:           2021 Litoprobka
+copyright: 2021 Litoprobka
 #category:
 extra-source-files:
-- README.md
+  - README.md
 
 default-extensions:
-- OverloadedStrings
-- NoImplicitPrelude
+  - OverloadedStrings
+  - NoImplicitPrelude
 
 dependencies:
   - name: base
-    mixin: 
-    - hiding (System.IO.Unsafe)
+    mixin:
+      - hiding (System.IO.Unsafe)
     version: ">= 4.8 && < 5"
   - aeson
   - aeson-pretty
+  - atomic-write
   - bytestring
   - data-default
   - directory
@@ -38,11 +39,11 @@ dependencies:
 
 executables:
   app:
-    source-dirs:      src
-    main:             Main.hs
+    source-dirs: src
+    main: Main.hs
     ghc-options:
-    - -W
-    - -threaded
+      - -W
+      - -threaded
 
 library: # seems like I have to do this for hspec
   source-dirs: src

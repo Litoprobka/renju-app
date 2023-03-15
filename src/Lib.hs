@@ -68,7 +68,7 @@ toMove m = moves %~ MoveSeq.toMove m
 -- | /O(log n)./ Add a position with default (blank) MoveInfo to the lib.
 -- Does not overwrite the position if it already exists.
 addPosDef :: MoveSeq -> Lib -> Lib
-addPosDef m = applyIf (not <. exists m) (addPos def m)
+addPosDef = applyIf2 (not <.. exists) (addPos def)
 
 -- | /O(log n)./ Add a position with given MoveInfo to the lib. 
 -- Intended for loading a lib from a text file.

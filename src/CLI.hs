@@ -1,14 +1,18 @@
-{-# LANGUAGE ViewPatterns, PatternSynonyms, LambdaCase #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ViewPatterns    #-}
 
 module CLI where
 
-import DefaultImports
-import Lib
-import System.Directory
-import Move (Move)
+import           Data.Aeson                               (eitherDecode)
+import           Data.Aeson.Encode.Pretty                 (encodePretty)
+import           DefaultImports
+import           System.AtomicWrite.Writer.LazyByteString (atomicWriteFile)
+import           System.Directory                         (doesFileExist)
+
+import           Lib
+import           Move                                     (Move)
 import qualified Move
-import Data.Aeson
-import Data.Aeson.Encode.Pretty
 
 -- very simple console-based UI that works with a single Lib
 -- I'm writing this to figure out what the GUI would need
@@ -20,16 +24,16 @@ pattern Move :: Move -> Text
 pattern Move move <- (Move.fromText -> Just move)
 
 data LibLoadError
-    = FileNotFound
-    | ParseFailure
-    deriving (Enum, Show, Eq)
+    = FileNotFound String
+    | ParseFailure String
+    deriving (Show, Eq)
 
 withArg :: Text -> Maybe (Text, Text)
 withArg =
     words .> \case
-    [_] -> Nothing
+    [_]            -> Nothing
     command : rest -> Just (command, unwords rest)
-    _ -> Nothing
+    _              -> Nothing
 
 printLib' :: Lib -> IO Lib
 printLib' l = putText (printLib l) >> pure l
@@ -38,25 +42,23 @@ loadLib :: Text -> IO (Either LibLoadError Lib)
 loadLib filePath = do
     fileExists <- doesFileExist <| toString filePath
     if not fileExists then
-            pure <| Left FileNotFound
+            pure <| Left <| FileNotFound <| toString filePath
         else
             readFileLBS (toString filePath)
-            <&> decode
-            <&> \case
-                Just newLib -> Right newLib
-                Nothing -> Left ParseFailure
+            <&> eitherDecode
+            <&> first ParseFailure
 
 loadLib' :: Text -> IO Lib
 loadLib' =
     loadLib
     >=> \case
-        Left err -> fail <| show err
+        Left err  -> fail <| show err
         Right lib -> pure lib
 
 saveLib :: Text -> Lib -> IO ()
 saveLib filePath =
     encodePretty
-    .> writeFileLBS (toString filePath)
+    .> atomicWriteFile (toString filePath)
 
 repl :: Lib -> IO ()
 repl l = do
@@ -71,8 +73,8 @@ repl l = do
         "load" `WithArg` filePath ->
             loadLib filePath
             >>= \case
-                Left err -> print err >> repl l
-                Right newLib -> repl newLib 
+                Left err     -> print err >> repl l
+                Right newLib -> repl newLib
 
         "mirror" -> repl <| mirror l
         "rotate" -> repl <| rotate l
@@ -108,5 +110,3 @@ pickSubcommand args gui = case args of
                 <&> foldr Lib.merge Lib.empty
                 >>= saveLib (fromString output)
                 )
-            
-            

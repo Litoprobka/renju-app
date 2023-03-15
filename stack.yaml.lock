@@ -5,37 +5,19 @@
 
 packages:
 - completed:
-    hackage: nanovg-0.8.0.0@sha256:224b71e26be44d80e76d4bfc8633aa74dae4b5675109781d57783b75f7aa74ef,4914
-    pantry-tree:
-      size: 2558
-      sha256: c03390da9e9dd47b259c441611baf8afd4026d9de69190e175d94957cf78816b
-  original:
-    hackage: nanovg-0.8.0.0
-- completed:
-    name: monomer
-    version: 1.4.1.0
-    git: https://github.com/fjvallarino/monomer
-    pantry-tree:
-      size: 17331
-      sha256: 5922c3f6f32000d9de06c3c9c12d51c0c0be9b2aea7682335f58055461a077d2
-    commit: cb17cb553c76eea97718ff3953e516868c2b7087
-  original:
-    git: https://github.com/fjvallarino/monomer
-    commit: cb17cb553c76eea97718ff3953e516868c2b7087
-- completed:
+    commit: 16795d473acb33dfb8d425ba22ad1016d3440044
+    git: https://github.com/jetho/Hclip
     name: Hclip
-    version: 3.0.0.4
-    git: https://github.com/jetho/Hclip
     pantry-tree:
-      size: 409
       sha256: 6322e1b9a17ca09f40a8bb6388e5508e927d491fc203bcca8db88f648120d358
-    commit: 16795d473acb33dfb8d425ba22ad1016d3440044
+      size: 409
+    version: 3.0.0.4
   original:
-    git: https://github.com/jetho/Hclip
     commit: 16795d473acb33dfb8d425ba22ad1016d3440044
+    git: https://github.com/jetho/Hclip
 snapshots:
 - completed:
-    size: 643193
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/9/30.yaml
-    sha256: e0665b6096ae42229053ff678d12ede7078a6e72ac479c4ac7eda025c83a5caa
-  original: nightly-2022-09-30
+    sha256: 1b1cb989b5728e6aee80592e84a3799d4b8c0fe1ea1f29dedfaf4cdd9c0f51c0
+    size: 649572
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/14.yaml
+  original: lts-20.14
