@@ -40,7 +40,7 @@ packages:
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 extra-deps:
-# - nanovg-0.8.0.0
+- tinyfiledialogs-0.2.1.0
 - git: "https://github.com/jetho/Hclip"
   commit: "16795d473acb33dfb8d425ba22ad1016d3440044"
 

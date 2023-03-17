@@ -5,6 +5,7 @@ module Main where
 import           CLI              (LibLoadError (..), loadLib, pickSubcommand,
                                    saveLib)
 import           DefaultImports
+import           FileDialogs
 import           Lib              (Lib)
 import qualified Lib
 import           Move             (Move)
@@ -14,12 +15,13 @@ import qualified MoveSeq
 import           UITypes
 import qualified UndoRedoList     as URList
 
-import           BoardTextEditor  (boardTextEditor)
+import           Data.Text        (takeWhileEnd)
 import           HSInstall.Paths  (getShareDir)
 import           Monomer
 import           Paths_renju_app  (getDataDir)
 import           System.Directory (XdgDirectory (XdgData),
                                    createDirectoryIfMissing, getXdgDirectory)
+import           System.FilePath  (pathSeparator)
 import           System.Hclip
 import           System.Process   (callCommand)
 
@@ -100,16 +102,8 @@ buildUI cfg _ model = widgetTree where
     usingReader cfg <|
     sequence <| [
       boardImage,
-      boardGrid (model ^. lib),
-      pure <| btEditor `nodeVisible` model ^. isEditing
+      boardGrid (model ^. lib)
     ]
-
-  btEditor = boardTextEditor boardTextNodeOrDef (model ^. lib |> Lib.getBoardText boardTextNodeOrDef |> fromMaybe "")
-
-  boardTextNodeOrDef = case model ^. editing of
-    EBoardText m -> m
-    _            -> Move.fromIntPartial 0 0
-
 
 handleEvent
   :: Config -- ^ Data directory
@@ -120,10 +114,18 @@ handleEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent (Config _ dataHome) _ _ model evt = case evt of
   NOOP -> []
-  LoadLib libFilePath -> oneTask <| NewLib <$> (throwError =<< loadLib libFilePath)
+  LoadLib libFilePath -> [
+    Task <| NewLib <$> (throwError =<< loadLib libFilePath)
+    , updateTitle libFilePath
+    ]
+  LoadLibDialog -> oneTask openLib
 
-  SaveLib libFilePath -> oneTask <| NOOP <$
-    when (not <| Lib.isEmpty (model ^. lib)) (saveLib libFilePath (model ^. lib))
+  SaveLib libFilePath ->
+    updateTitle libFilePath
+    : (Task <| NOOP <$
+    when (not <| Lib.isEmpty (model ^. lib)) (CLI.saveLib libFilePath (model ^. lib)))
+    : updateModel currentFile (const libFilePath)
+  SaveLibDialog -> oneTask FileDialogs.saveLib
   SaveCurrentLib -> one <| Event <| SaveLib (model ^. currentFile)
 
   NewLib newLib -> updateIfNotReadOnly (const newLib)
@@ -133,8 +135,11 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
 
   BoardText m t -> updateIfNotReadOnly <| Lib.addBoardText m t
 
-  StartEditing m -> whenNotReadOnly <| updateModel editing (const <| EBoardText m)
+  StartEditing m ->
+    editBoardText m (model ^. lib |> Lib.getBoardText m |> fromMaybe " ")
+    : (whenNotReadOnly <| updateModel editing (const <| EBoardText m))
   StopEditing -> updateModel editing (const <| ENone)
+  SaveBoardText m t -> [Event StopEditing, Event <| BoardText m t]
 
   Rotate -> updateIfNotEditing Lib.rotate
   Mirror -> updateIfNotEditing Lib.mirror
@@ -154,6 +159,8 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
     "import -window \"$(xdotool getwindowfocus -f)\" " <> dataHome <> "/screenshot.png && xclip -sel clip -t image/png " <> dataHome <> "/screenshot.png") -- TODO: use ImageMagick as a library, don't use the xdotools workaround
 
   ToggleReadOnly -> updateModel UITypes.readOnly not
+
+  ResetHistory -> updateLibStates <| URList.one <. view URList.current
 
   where
     updateModel lens f = [ Model (model |> lens %~ f) ]
@@ -184,6 +191,12 @@ handleEvent (Config _ dataHome) _ _ model evt = case evt of
         else actions
     updateIfNotReadOnly = whenNotReadOnly <. updateLib
 
+    updateTitle libFilePath =
+      Request <| UpdateWindow <| WindowSetTitle
+      <| "renju-app - " <> dropDir libFilePath
+
+    dropDir = takeWhileEnd (/=pathSeparator)
+
 
 main :: IO ()
 main = do
@@ -199,7 +212,7 @@ main = do
   let appCfg = Config rDir dataHome
       libPathOrDef = fromMaybe (dataHome <> "/lib-autosave")
       config libFilePath = [
-          appWindowTitle "R",
+          appWindowTitle "renju-app",
           appTheme darkTheme,
           appFontDef "Regular" <| rDir <> "/resources/fonts/Roboto-Regular.ttf",
           appInitEvent <| LoadLib <| libPathOrDef libFilePath,
@@ -229,10 +242,12 @@ defaultShortcuts model = [
   , ("C-z", Undo)
   , ("C-S-z", Redo)
   , ("C-y", Redo)
-  , ("C-s", SaveCurrentLib) -- placeholder
+  , ("C-o", LoadLibDialog)
+  , ("C-s", SaveLibDialog) -- placeholder
   , ("C-c", Getpos)
   , ("C-v", Paste)
   , ("C-p", Screenshot)
+  , ("C-h", ResetHistory)
   , ("C-S-r", ToggleReadOnly)
   , ("C-S-m", ToggleReadOnly)
   ]

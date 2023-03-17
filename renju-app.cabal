@@ -18,9 +18,9 @@ extra-source-files:
 
 library
   exposed-modules:
-      BoardTextEditor
       CLI
       DefaultImports
+      FileDialogs
       Lib
       Main
       Move
@@ -48,6 +48,7 @@ library
     , bytestring
     , data-default
     , directory
+    , filepath
     , flow
     , hsinstall
     , ilist
@@ -56,6 +57,7 @@ library
     , process
     , relude
     , text
+    , tinyfiledialogs
     , unordered-containers
     , vector
     , vector-sized
@@ -66,9 +68,9 @@ library
 executable app
   main-is: Main.hs
   other-modules:
-      BoardTextEditor
       CLI
       DefaultImports
+      FileDialogs
       Lib
       Move
       MoveSeq
@@ -94,6 +96,7 @@ executable app
     , bytestring
     , data-default
     , directory
+    , filepath
     , flow
     , hsinstall
     , ilist
@@ -102,6 +105,7 @@ executable app
     , process
     , relude
     , text
+    , tinyfiledialogs
     , unordered-containers
     , vector
     , vector-sized
@@ -134,6 +138,7 @@ test-suite spec
     , bytestring
     , data-default
     , directory
+    , filepath
     , flow
     , hsinstall
     , hspec ==2.*
@@ -144,6 +149,7 @@ test-suite spec
     , relude
     , renju-app
     , text
+    , tinyfiledialogs
     , unordered-containers
     , vector
     , vector-sized

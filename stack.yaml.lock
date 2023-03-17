@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: tinyfiledialogs-0.2.1.0@sha256:118f9fd7b721de68f1e84c8b820784e31140bf34e32f23fd6410fb57914a309c,1905
+    pantry-tree:
+      sha256: 518def606ee59dad71b77dec20a9dc55072bdd8fe2194a0ccfca2b2afee1767e
+      size: 482
+  original:
+    hackage: tinyfiledialogs-0.2.1.0
+- completed:
     commit: 16795d473acb33dfb8d425ba22ad1016d3440044
     git: https://github.com/jetho/Hclip
     name: Hclip

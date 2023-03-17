@@ -2,35 +2,37 @@
 
 module UITypes where
 
-import DefaultImports
+import           DefaultImports
 
-import Move (Move)
-import MoveSeq (MoveSeq)
-import UndoRedoList (UndoRedoList)
-import Lib (Lib)
+import           Lib            (Lib)
+import           Move           (Move)
+import           MoveSeq        (MoveSeq)
+import           UndoRedoList   (UndoRedoList)
 
-import qualified UndoRedoList as URList
+import qualified UndoRedoList   as URList
 
-import Monomer
+import           Monomer
 
 data AppModel = AppModel {
-  _libStates :: UndoRedoList Lib,
-  _editing :: EditType,
-  _readOnly :: Bool,
+  _libStates   :: UndoRedoList Lib,
+  _editing     :: EditType,
+  _readOnly    :: Bool,
   _currentFile :: Text
 } deriving (Eq, Show)
 
 -- | Configuration and runtime information
 data Config = Config {
   _resources :: Text, -- ^ where app assets are stored
-  _dataHome :: Text   -- ^ XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
+  _dataHome  :: Text   -- ^ XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
 }
 
 type App a = Reader Config a
 
 data AppEvent
   = LoadLib Text
+  | LoadLibDialog
   | SaveLib Text
+  | SaveLibDialog
   | SaveCurrentLib
   | NOOP
   | NewLib Lib
@@ -39,6 +41,7 @@ data AppEvent
   | Mirror
   | RemovePos
   | BoardText Move Text
+  | SaveBoardText Move Text
   | StartEditing Move
   | StopEditing
   | Comment Text
@@ -49,6 +52,7 @@ data AppEvent
   | Redo
   | Screenshot
   | ToggleReadOnly
+  | ResetHistory
   deriving (Eq, Show)
 
 data EditType
@@ -66,23 +70,6 @@ makeLenses 'AppModel
 getResourcesDir :: App Text
 getResourcesDir =
   ask <&> view resources
-
-
-data BTEvent
-  = Save
-  | Cancel
-  | NOOP'
-  deriving (Show, Eq)
-
-data BTModel = BTModel {
-  _move :: Move,
-  _boardText :: Text
-} deriving (Show, Eq)
-
-type BTWenv = WidgetEnv BTModel BTEvent
-type BTNode = WidgetNode BTModel BTEvent
-
-makeLenses 'BTModel
 
 -- | Gets current lib state
 lib :: Getting r AppModel Lib

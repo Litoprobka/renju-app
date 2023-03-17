@@ -27,6 +27,7 @@ dependencies:
   - bytestring
   - data-default
   - directory
+  - filepath
   - flow
   - Hclip
   - hsinstall
@@ -36,6 +37,7 @@ dependencies:
   - process
   - relude
   - text
+  - tinyfiledialogs
   - unordered-containers
   - vector
   - vector-sized
