@@ -2,29 +2,32 @@
 
 module UITypes where
 
-import           DefaultImports
+import DefaultImports
 
-import           Lib            (Lib)
-import           Move           (Move)
-import           MoveSeq        (MoveSeq)
-import           UndoRedoList   (UndoRedoList)
+import Lib (Lib)
+import Move (Move)
+import MoveSeq (MoveSeq)
+import UndoRedoList (UndoRedoList)
 
-import qualified UndoRedoList   as URList
+import qualified UndoRedoList as URList
 
-import           Monomer
+import Monomer
 
-data AppModel = AppModel {
-  _libStates   :: UndoRedoList Lib,
-  _editing     :: EditType,
-  _readOnly    :: Bool,
-  _currentFile :: Text
-} deriving (Eq, Show)
+data AppModel = AppModel
+  { _libStates :: UndoRedoList Lib
+  , _editing :: EditType
+  , _readOnly :: Bool
+  , _currentFile :: Text
+  }
+  deriving (Eq, Show)
 
 -- | Configuration and runtime information
-data Config = Config {
-  _resources :: Text, -- ^ where app assets are stored
-  _dataHome  :: Text   -- ^ XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
-}
+data Config = Config
+  { _resources :: Text
+  -- ^ where app assets are stored
+  , _dataHome :: Text
+  -- ^ XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
+  }
 
 type App a = Reader Config a
 

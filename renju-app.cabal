@@ -1,6 +1,6 @@
 cabal-version: 2.0
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -40,8 +40,7 @@ library
       StrictData
   ghc-options: -W
   build-depends:
-      Hclip
-    , aeson
+      aeson
     , aeson-pretty
     , atomic-write
     , base >=4.8 && <5
@@ -63,7 +62,7 @@ library
     , vector-sized
   mixins:
       base hiding (System.IO.Unsafe)
-  default-language: Haskell2010
+  default-language: GHC2021
 
 executable app
   main-is: Main.hs
@@ -88,8 +87,7 @@ executable app
       StrictData
   ghc-options: -W -threaded
   build-depends:
-      Hclip
-    , aeson
+      aeson
     , aeson-pretty
     , atomic-write
     , base >=4.8 && <5
@@ -111,7 +109,7 @@ executable app
     , vector-sized
   mixins:
       base hiding (System.IO.Unsafe)
-  default-language: Haskell2010
+  default-language: GHC2021
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -130,8 +128,7 @@ test-suite spec
       NoImplicitPrelude
       StrictData
   build-depends:
-      Hclip
-    , aeson
+      aeson
     , aeson-pretty
     , atomic-write
     , base >=4.8 && <5
@@ -155,5 +152,5 @@ test-suite spec
     , vector-sized
   mixins:
       base hiding (System.IO.Unsafe)
-  default-language: Haskell2010
+  default-language: GHC2021
   build-tool-depends: hspec-discover:hspec-discover == 2.*

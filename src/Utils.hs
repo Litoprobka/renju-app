@@ -1,24 +1,30 @@
 module Utils where
 
-import Relude
 import Flow
+import Relude
 
 -- * Utils
+
 --
--- $utils
--- various utility functions that don't belong anywhere
+
+{- $utils
+various utility functions that don't belong anywhere
+-}
 
 infixl 9 <.>>
+
 -- | lifted function composition
 (<.>>) :: Functor f => (a -> f b) -> (b -> c) -> (a -> f c)
 (<.>>) f1 f2 x = f1 x <&> f2
 
 infixr 9 <..
+
 -- | composes a two-argument function with a one argument function
 (<..) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (<..) f1 f2 x = f1 <. f2 x
 
 infixl 9 ..> -- :> is taken
+
 -- | composes a two-argument function with a one argument function
 (..>) :: (a -> b -> c) -> (c -> d) -> a -> b -> d
 (..>) f1 f2 x = f1 x .> f2
@@ -45,6 +51,6 @@ safeHead :: [a] -> Maybe a
 safeHead = listToMaybe
 
 maxBy :: Ord b => (a -> b) -> a -> a -> a
-maxBy f x y | f x >= f y = x
-            | otherwise = y
-
+maxBy f x y
+  | f x >= f y = x
+  | otherwise = y

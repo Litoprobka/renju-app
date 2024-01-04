@@ -11,6 +11,8 @@ copyright: 2021 Litoprobka
 extra-source-files:
   - README.md
 
+language: GHC2021
+
 default-extensions:
   - OverloadedStrings
   - NoImplicitPrelude
@@ -29,7 +31,6 @@ dependencies:
   - directory
   - filepath
   - flow
-  - Hclip
   - hsinstall
   - ilist
   - lens

@@ -5,26 +5,29 @@
 
 packages:
 - completed:
+    hackage: ilist-0.4.0.1@sha256:126019faf3d02f305c5762ae9602be1cbf76291153a1a7461270ad1429678111,3305
+    pantry-tree:
+      sha256: 1e45ec9d7d543f0689da97b6de57b9a729c605660af73e15848c10b37640a888
+      size: 438
+  original:
+    hackage: ilist-0.4.0.1
+- completed:
+    hackage: monomer-1.5.1.0@sha256:0441ecfb767c716015d4baace5bd66eda62bb65afdca0ca3ad7d81a9d4bd1353,17356
+    pantry-tree:
+      sha256: f803a19d455fad33a0e02db0aac1996d53f70e8311e480ca1752085c81d1690c
+      size: 14513
+  original:
+    hackage: monomer-1.5.1.0
+- completed:
     hackage: tinyfiledialogs-0.2.1.0@sha256:118f9fd7b721de68f1e84c8b820784e31140bf34e32f23fd6410fb57914a309c,1905
     pantry-tree:
       sha256: 518def606ee59dad71b77dec20a9dc55072bdd8fe2194a0ccfca2b2afee1767e
       size: 482
   original:
     hackage: tinyfiledialogs-0.2.1.0
-- completed:
-    commit: 16795d473acb33dfb8d425ba22ad1016d3440044
-    git: https://github.com/jetho/Hclip
-    name: Hclip
-    pantry-tree:
-      sha256: 6322e1b9a17ca09f40a8bb6388e5508e927d491fc203bcca8db88f648120d358
-      size: 409
-    version: 3.0.0.4
-  original:
-    commit: 16795d473acb33dfb8d425ba22ad1016d3440044
-    git: https://github.com/jetho/Hclip
 snapshots:
 - completed:
-    sha256: 1b1cb989b5728e6aee80592e84a3799d4b8c0fe1ea1f29dedfaf4cdd9c0f51c0
-    size: 649572
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/14.yaml
-  original: lts-20.14
+    sha256: 7d4b649cf368f9076d8aa049aa44efe58950971d105892734e9957b2a26a2186
+    size: 640060
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/21.yaml
+  original: lts-21.21

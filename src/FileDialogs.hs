@@ -2,12 +2,12 @@
 
 module FileDialogs where
 
-import           DefaultImports
-import           UITypes
+import DefaultImports
+import UITypes
 
-import           Graphics.UI.TinyFileDialogs
-import           Monomer
-import qualified Prelude                     as P (head)
+import Graphics.UI.TinyFileDialogs
+import Monomer
+import qualified Prelude as P (head)
 
 {-
 --openFileDialog "owo" "~" [] "" False
@@ -16,25 +16,25 @@ import qualified Prelude                     as P (head)
 
 openLib :: IO AppEvent
 openLib =
-    maybe NOOP (LoadLib . P.head) -- if a file is picked, the list is guaranteed to contain one element
+  maybe NOOP (LoadLib . P.head) -- if a file is picked, the list is guaranteed to contain one element
     <$> openFileDialog
-        "Open a lib file"
-        "$RENJU_APP_DIR"
-        ["*.json", "*", "!*.*"]
-        "Lib fiels"
-        False
+      "Open a lib file"
+      "$RENJU_APP_DIR"
+      ["*.json", "*", "!*.*"]
+      "Lib fiels"
+      False
 
 saveLib :: IO AppEvent
 saveLib =
-    maybe NOOP SaveLib
+  maybe NOOP SaveLib
     <$> saveFileDialog
-        "Save the lib"
-        "$RENJU_APP_DIR"
-        ["*.json", "*", "!*.*"]
-        "Lib files"
+      "Save the lib"
+      "$RENJU_APP_DIR"
+      ["*.json", "*", "!*.*"]
+      "Lib files"
 
---editBoardText
-editBoardText m t=
-    Task
+-- editBoardText
+editBoardText m t =
+  Task
     <| maybe StopEditing (SaveBoardText m)
     <$> inputBox "Enter board text" "" (Just t)
