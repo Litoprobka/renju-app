@@ -20,11 +20,13 @@ library
   exposed-modules:
       CLI
       DefaultImports
+      EventHandling
       FileDialogs
       Lib
       Main
       Move
       MoveSeq
+      UI
       UITypes
       UndoRedoList
       Utils
@@ -69,10 +71,12 @@ executable app
   other-modules:
       CLI
       DefaultImports
+      EventHandling
       FileDialogs
       Lib
       Move
       MoveSeq
+      UI
       UITypes
       UndoRedoList
       Utils

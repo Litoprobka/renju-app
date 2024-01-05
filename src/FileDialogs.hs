@@ -36,5 +36,5 @@ saveLib =
 -- editBoardText
 editBoardText m t =
   Task
-    <| maybe StopEditing (SaveBoardText m)
+    <| maybe StopEditing (SavEditingBoardText m)
     <$> inputBox "Enter board text" "" (Just t)

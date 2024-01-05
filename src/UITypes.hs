@@ -38,29 +38,45 @@ data AppEvent
   | SaveLibDialog
   | SaveCurrentLib
   | NOOP
-  | NewLib Lib
+  | LibChanging NonReadOnlyEvent
+  | NewLib Text Lib
   | BoardClick Move Button Int
   | Rotate
   | Mirror
-  | RemovePos
-  | BoardText Move Text
-  | SaveBoardText Move Text
-  | StartEditing Move
+  | SavEditingBoardText Move Text
   | StopEditing
   | Comment Text
   | Getpos
   | Paste
-  | Putpos MoveSeq
-  | Undo
-  | Redo
   | Screenshot
   | ToggleReadOnly
   | ResetHistory
   deriving (Eq, Show)
 
+data NonReadOnlyEvent -- these events should only do anything when the lib is not in read-only mode
+  = RemovePos
+  | BoardText Move Text
+  | StartEditing Move
+  | Putpos MoveSeq
+  | Undo
+  | Redo
+  deriving (Eq, Show)
+
+{-
+RemovePos -> [updateLib Lib.remove]
+    BoardText m t -> [updateLib <| Lib.addBoardText m t]
+    StartEditing m ->
+      [ editBoardText m (model ^. lib |> Lib.getBoardText m |> fromMaybe " ")
+      , updateModel editing (const <| EditingBoardText m)
+      ]
+    Putpos ms -> [updateLib <| Lib.addPosRec ms]
+    Undo -> [updateLibStates URList.undo]
+    Redo
+-}
+
 data EditType
-  = ENone
-  | EBoardText Move
+  = NotEditing
+  | EditingBoardText Move
   deriving (Eq, Show)
 
 type AppWenv = WidgetEnv AppModel AppEvent
@@ -71,12 +87,11 @@ makeLenses 'AppModel
 
 -- not sure if this function belongs in UITypes
 getResourcesDir :: App Text
-getResourcesDir =
-  ask <&> view resources
+getResourcesDir = view resources
 
--- | Gets current lib state
+-- | Gets the current lib state
 lib :: Getting r AppModel Lib
 lib = libStates . URList.current
 
 isEditing :: Getting r AppModel Bool
-isEditing = to (\model -> model ^. editing /= ENone)
+isEditing = editing . to (/= NotEditing)
