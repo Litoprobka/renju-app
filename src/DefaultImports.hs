@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 module DefaultImports (
   module Relude,
   module Flow,

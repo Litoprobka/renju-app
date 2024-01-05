@@ -14,11 +14,6 @@ import UITypes
 
 import Monomer
 
-imageWithDir :: WidgetEvent e => Text -> [ImageCfg e] -> App (WidgetNode s e)
-imageWithDir path cfg = do
-  dir <- getResourcesDir
-  pure <| image_ (dir <> path) cfg
-
 boardNode :: Lib -> Move -> App AppNode
 boardNode l m =
   tooltip'
@@ -30,18 +25,18 @@ boardNode l m =
       ]
  where
   currentPos = view Lib.moves l
-  stoneImage = imageWithDir ("/resources/" <> stoneAsset <> ".png") [alignCenter, alignMiddle, fitEither]
+  stoneImage = do
+    textures <- view stoneTextures
+    let (texture, size) = textures stoneAsset
+    pure <| imageMem_ ("stone" <> show stoneAsset) texture size [alignCenter, alignMiddle, fitEither]
+
   stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
     Nothing
       | moveText /= ""
           || noNextMove ->
-          "blank"
-      | otherwise ->
-          "move-exists-" <> case currentPos ^. MoveSeq.nextColor of
-            Black -> "black"
-            White -> "white"
-    Just Black -> "black-stone-gradient"
-    Just White -> "white-stone-gradient"
+          Blank
+      | otherwise -> Dot <| currentPos ^. MoveSeq.nextColor
+    Just color -> NextMove color
 
   moveText =
     Lib.getBoardText m l
@@ -66,7 +61,9 @@ boardNode l m =
     Just comment -> tooltip comment
 
 boardImage :: App AppNode
-boardImage = imageWithDir "/resources/board.png" [fitFill]
+boardImage = do
+  (texture, size) <- view boardTexture
+  pure <| imageMem_ "background" texture size [fitFill]
 
 boardGrid :: Lib -> App AppNode
 boardGrid l =
@@ -75,11 +72,12 @@ boardGrid l =
       ( \y ->
           [0 .. 14]
             |> map (`Move.fromIntPartial` y)
-            .> traverse (boardNode l)
+              .> traverse (boardNode l)
       )
     <&> reverse
-    .> map hgrid
-    .> vgrid
+      .> map hgrid
+      .> vgrid
+
 -- monadic mess
 
 buildUI
@@ -87,24 +85,21 @@ buildUI
   -> AppWenv
   -> AppModel
   -> AppNode
-buildUI cfg _ model = widgetTree
- where
-  widgetTree =
-    keystroke (defaultShortcuts model)
-      <| handleClipboard
-      <| zstack
-      <| usingReader cfg
-      <| sequence
-      <| [ boardImage
-         , boardGrid (model ^. lib)
-         ]
+buildUI cfg _ model =
+  usingReader cfg <| do
+    bi <- boardImage
+    bg <- boardGrid (model ^. lib)
+    pure
+      <. keystroke (defaultShortcuts model)
+      <. handleClipboard
+      <| zstack [bi, bg]
 
 defaultShortcuts :: AppModel -> [(Text, AppEvent)]
 defaultShortcuts model =
   [ ("C-r", Rotate)
   , ("C-m", Mirror)
   , ("Delete", LibChanging RemovePos)
-  , ("C-t", Comment <| MoveSeq.toGetpos <| model ^. lib . Lib.moves)
+  , ("C-t", Comment <. MoveSeq.toGetpos <| model ^. lib . Lib.moves)
   , ("C-z", LibChanging Undo)
   , ("C-S-z", LibChanging Redo)
   , ("C-y", LibChanging Redo)

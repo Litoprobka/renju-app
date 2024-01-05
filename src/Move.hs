@@ -57,7 +57,7 @@ fromText t =
 fromBytePartial :: Int -> Move
 fromBytePartial i
   | i > 224 = error "invalid x or y"
-  | otherwise = i `divMod` 15 |> swap |> uncurry Move
+  | otherwise = i `divMod` 15 |> swap .> uncurry Move
 
 -- * Destruction
 

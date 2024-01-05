@@ -25,14 +25,17 @@ dependencies:
     version: ">= 4.8 && < 5"
   - aeson
   - aeson-pretty
+  - async
   - atomic-write
   - bytestring
+  - bytestring-to-vector
   - data-default
   - directory
   - filepath
   - flow
   - hsinstall
   - ilist
+  - JuicyPixels
   - lens
   - monomer
   - process

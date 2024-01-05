@@ -6,10 +6,10 @@ import DefaultImports
 
 import Lib (Lib)
 import Move (Move)
-import MoveSeq (MoveSeq)
+import MoveSeq (MoveSeq, Stone)
 import UndoRedoList (UndoRedoList)
 
-import qualified UndoRedoList as URList
+import UndoRedoList qualified as URList
 
 import Monomer
 
@@ -23,11 +23,18 @@ data AppModel = AppModel
 
 -- | Configuration and runtime information
 data Config = Config
-  { _resources :: Text
-  -- ^ where app assets are stored
-  , _dataHome :: Text
+  { _dataHome :: Text
   -- ^ XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
+  , _stoneTextures :: StoneTextureType -> (ByteString, Size)
+  , -- I hope storing it as a function wouldn't hurt performance
+    _boardTexture :: (ByteString, Size)
   }
+
+data StoneTextureType
+  = Blank
+  | Dot Stone
+  | NextMove Stone
+  deriving (Eq, Show)
 
 type App a = Reader Config a
 
@@ -84,10 +91,6 @@ type AppNode = WidgetNode AppModel AppEvent
 
 makeLenses 'Config
 makeLenses 'AppModel
-
--- not sure if this function belongs in UITypes
-getResourcesDir :: App Text
-getResourcesDir = view resources
 
 -- | Gets the current lib state
 lib :: Getting r AppModel Lib

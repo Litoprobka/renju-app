@@ -36,17 +36,13 @@ handleClipboard :: WidgetNode s AppEvent -> WidgetNode s AppEvent
 handleClipboard innerWidget =
   defaultWidgetNode "clipboard" cbWidget
     |> L.children
-    .~ one innerWidget
+      .~ one innerWidget
  where
   cbWidget = createContainer () def{containerHandleEvent}
 
   containerHandleEvent _ this _ event = case event of
     Clipboard (cbToText .> MoveSeq.fromGetpos -> Just ms) ->
-      Just
-        <| WidgetResult
-          { _wrNode = this
-          , _wrRequests = one <. RaiseEvent <. LibChanging <| Putpos ms
-          }
+      Just <. resultReqs this <| [RaiseEvent <. LibChanging <| Putpos ms]
     _ -> Nothing
 
   cbToText (ClipboardText text) = text
@@ -60,20 +56,21 @@ handleEvent
   -> AppModel
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
-handleEvent (Config _ dataHome) wenv _ model evt = case evt of
+handleEvent (Config{_dataHome}) wenv _ model evt = case evt of
   NOOP -> []
   LoadLib libFilePath ->
     [ Task <| uncurry NewLib <$> traverseToSnd (errorToException <=< loadLib) libFilePath
     , updateTitle libFilePath
     ]
-  LoadLibDialog -> oneTask openLib
+  LoadLibDialog -> one <| Task openLib
   SaveLib libFilePath ->
     [ updateTitle libFilePath
-    , Task <| NOOP
-        <$ when (not <| Lib.isEmpty (model ^. lib)) (CLI.saveLib libFilePath (model ^. lib))
+    , Task <|
+        NOOP
+          <$ when (not <| Lib.isEmpty (model ^. lib)) (CLI.saveLib libFilePath (model ^. lib))
     , updateModel currentFile (const libFilePath)
     ]
-  SaveLibDialog -> oneTask FileDialogs.saveLib
+  SaveLibDialog -> one <| Task FileDialogs.saveLib
   SaveCurrentLib -> one <. Event <| SaveLib (model ^. currentFile)
   NewLib newTitle newLib ->
     [ updateLib (const newLib)
@@ -97,15 +94,16 @@ handleEvent (Config _ dataHome) wenv _ model evt = case evt of
       <. fromMaybe (error "cbHandlerPath is invalid")
       <| nodeInfoFromPath wenv cbHandlerPath
   Screenshot ->
-    oneTask <| NOOP
-      <$ callCommand
-        ( toString
-            <| "import -window \"$(xdotool getwindowfocus -f)\" "
-            <> dataHome
-            <> "/screenshot.png && xclip -sel clip -t image/png "
-            <> dataHome
-            <> "/screenshot.png" -- TODO: use ImageMagick as a library, don't use the xdotools workaround
-        )
+    one <. Task <|
+      NOOP
+        <$ callCommand
+          ( toString <|
+              "import -window \"$(xdotool getwindowfocus -f)\" "
+                <> _dataHome
+                <> "/screenshot.png && xclip -sel clip -t image/png "
+                <> _dataHome
+                <> "/screenshot.png" -- TODO: use ImageMagick as a library, don't use the xdotools workaround
+          )
   ToggleReadOnly -> [updateModel UITypes.readOnly not]
   ResetHistory -> [updateLibStates <| URList.one <. view URList.current]
   LibChanging event
@@ -116,15 +114,15 @@ handleEvent (Config _ dataHome) wenv _ model evt = case evt of
     RemovePos -> [updateLib Lib.remove]
     BoardText m t -> [updateLib <| Lib.addBoardText m t]
     StartEditing m ->
-      [ editBoardText m (model ^. lib |> Lib.getBoardText m |> fromMaybe " ")
+      [ editBoardText m (model ^. lib |> Lib.getBoardText m .> fromMaybe " ")
       , updateModel editing (const <| EditingBoardText m)
       ]
     Putpos ms -> [updateLib <| Lib.addPosRec ms]
     Undo -> [updateLibStates URList.undo]
     Redo -> [updateLibStates URList.redo]
-    --
-    -- fourmoulu won't let me add a line break here
-    --
+  --
+  -- fourmoulu won't let me add a line break here
+  --
   updateModel lens f = Model (model |> lens %~ f)
   updateLibStates = updateModel libStates
   updateLib = updateLibStates <. URList.update
@@ -135,26 +133,24 @@ handleEvent (Config _ dataHome) wenv _ model evt = case evt of
   errorToException (Right newLib) = pure newLib
 
   handleClick m BtnLeft count =
-    updateLib
-      <| ( case count of
-            1 ->
-              if model ^. UITypes.readOnly
-                then Lib.nextMove
-                else Lib.addMove
-            _ -> Lib.toMove
-         )
+    updateLib <|
+      ( case count of
+          1 ->
+            if model ^. UITypes.readOnly
+              then Lib.nextMove
+              else Lib.addMove
+          _ -> Lib.toMove
+      )
         m
-  handleClick m BtnMiddle _ = Event <| LibChanging <| StartEditing m
+  handleClick m BtnMiddle _ = Event <. LibChanging <| StartEditing m
   handleClick _ BtnRight _ = updateLib <| Lib.back
-
-  oneTask = one <. Task
 
   updateTitle libFilePath =
     Request
       <. UpdateWindow
       <. WindowSetTitle
       <| "renju-app - "
-      <> dropDir libFilePath
+        <> dropDir libFilePath
 
   dropDir = takeWhileEnd (/= pathSeparator)
 

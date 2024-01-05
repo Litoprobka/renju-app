@@ -42,11 +42,14 @@ library
       StrictData
   ghc-options: -W
   build-depends:
-      aeson
+      JuicyPixels
+    , aeson
     , aeson-pretty
+    , async
     , atomic-write
     , base >=4.8 && <5
     , bytestring
+    , bytestring-to-vector
     , data-default
     , directory
     , filepath
@@ -91,11 +94,14 @@ executable app
       StrictData
   ghc-options: -W -threaded
   build-depends:
-      aeson
+      JuicyPixels
+    , aeson
     , aeson-pretty
+    , async
     , atomic-write
     , base >=4.8 && <5
     , bytestring
+    , bytestring-to-vector
     , data-default
     , directory
     , filepath
@@ -132,11 +138,14 @@ test-suite spec
       NoImplicitPrelude
       StrictData
   build-depends:
-      aeson
+      JuicyPixels
+    , aeson
     , aeson-pretty
+    , async
     , atomic-write
     , base >=4.8 && <5
     , bytestring
+    , bytestring-to-vector
     , data-default
     , directory
     , filepath

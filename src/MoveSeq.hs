@@ -14,9 +14,9 @@ import Data.List.Index (deleteAt, ipartition)
 import Data.Text (snoc, toLower)
 import DefaultImports
 import Move (Move, Vec8)
-import qualified Move
+import Move qualified
 
-import qualified Data.Vector.Generic.Sized as S
+import Data.Vector.Generic.Sized qualified as S
 
 {- | A /seq/uence of /move/s, representing a position on the board.
 
@@ -88,7 +88,7 @@ empty = MoveSeq [] Black (S.replicate z)
  where
   z = LongHash 0
 
--- | /O(1)./ Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
+-- | /O(n)./ Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
 makeMove :: Move -> MoveSeq -> Maybe MoveSeq
 makeMove move pos
   | move `notIn` pos =
@@ -98,18 +98,18 @@ makeMove move pos
         |> Just
   | otherwise = Nothing
 
--- | /O(1)./ Like 'makeMove', but returns the same position if the coordinates are taken
+-- | /O(n)./ Like 'makeMove', but returns the same position if the coordinates are taken
 makeMove' :: Move -> MoveSeq -> MoveSeq
 makeMove' move =
   tryApply (makeMove move)
 
 -- | /O(1)./ Returns the positon without the last move, or the same position if it was empty
 back :: MoveSeq -> MoveSeq
-back ms = case view moveList ms of
-  [] -> ms
-  m : moves ->
+back ms = case ms ^? moveList . _head of
+  Nothing -> ms
+  Just m ->
     ms
-      |> set moveList moves
+      |> over moveList (drop 1)
       |> updateHashes (-) (flipStone .> hashMult) m
 
 -- | /O(n)./ Given Move `m`, returns a position where `m` is the last move, or the same position if it does not contain `m`.
@@ -119,11 +119,11 @@ toMove m ms = go ms
   go ms' =
     lastMove ms'
       <&> (\m' -> ms' |> applyWhen (m' /= m) (back .> go))
-        |> fromMaybe ms
+      |> fromMaybe ms
 
 -- ** From other types
 
--- | /O(n)./ Construct a MoveSeq from a list of moves
+-- | /O(n^2)./ Construct a MoveSeq from a list of moves
 fromList :: [Move] -> MoveSeq
 fromList = foldr' makeMove' MoveSeq.empty
 
@@ -155,9 +155,7 @@ isEmpty _ = False
 
 -- | /O(n)./ The number of moves in a position
 moveCount :: MoveSeq -> Int
-moveCount =
-  view moveList
-    .> length
+moveCount = lengthOf moveList
 
 -- | /O(n)./ Returns the index of a move in a position, counting from one; Nothing if the does not exist in the position
 moveIndex :: Move -> MoveSeq -> Maybe Int
@@ -167,7 +165,9 @@ moveIndex move =
     .> elemIndex move
     <.>> (+ 1)
 
--- | /O(n)./ Returns the stone color of a move in a position, or Nothing if it does not contain the move
+{- | /O(n)./ Returns the stone color of a move in a position, or Nothing if it does not contain the move
+TODO: lens
+-}
 stoneAt :: Move -> MoveSeq -> Maybe Stone
 stoneAt move =
   moveIndex move
@@ -180,9 +180,7 @@ notIn :: Move -> MoveSeq -> Bool
 notIn move = stoneAt move .> isNothing
 
 lastMove :: MoveSeq -> Maybe Move
-lastMove ms = case ms ^. moveList of
-  m : _ -> Just m
-  [] -> Nothing
+lastMove = (^? moveList . _head)
 
 -- ** Conversions
 
@@ -208,11 +206,11 @@ toText
 toText f ms =
   [0 .. 14]
     <&> (\y -> (`Move.fromIntPartial` y) <$> [0 .. 14])
-    <&> map (snoc " " <. (f <*> flip MoveSeq.stoneAt ms)) -- S-combinator, OwO (this is similar to \ m -> f m (MoveSeq.stoneAt m ms))
-      |> imap (\i -> foldl' (<>) <| align <| i + 1)
-      |> (letters :)
-      |> reverse
-      |> unlines
+      .> map (snoc " " <. (f <*> flip MoveSeq.stoneAt ms)) -- S-combinator, OwO (this is similar to \ m -> f m (MoveSeq.stoneAt m ms))
+    |> imap (\i -> foldl' (<>) <. align <| i + 1)
+      .> (letters :)
+      .> reverse
+      .> unlines
  where
   align i
     | i > 9 = show i
@@ -227,13 +225,14 @@ updateHashes :: (LongHash -> LongHash -> LongHash) -> (Stone -> Integer) -> Move
 updateHashes f mult move ms =
   ms
     |> over hashes (S.zipWith zf Move.transformations)
-    |> over nextColor flipStone
+      .> over nextColor flipStone
  where
-  zf trns = flip f (fromIntegral <| (* mult (ms ^. nextColor)) <| Move.hashPart <| trns move)
+  zf trns = flip f (fromIntegral <. (* mult (ms ^. nextColor)) <. Move.hashPart <| trns move)
 
 {- | /~O(n^2)./ Apply a function to each Move that is not present in a given position.
 
 Technically, complexity is linear (225n), but in practice it is worse than /O(n^2)/, because n <= 225
+...and that means using O notation here is kinda pointless, but whatever
 -}
 mapEmpty :: (Move -> a) -> MoveSeq -> [a]
 mapEmpty f moves =
@@ -254,13 +253,10 @@ allPrev moves =
     ^. moveList
     |> reverse
     |> ipartition (\i _ -> even i) -- True for black moves, False for white moves; I could write this as (even .> const), but the explicit lambda is more readable
-    |> _1
-    %~ copies
-      |> _2
-    %~ copies
-      |> blackOrWhite
-    %~ imap deleteAt -- I love lens
-      |> uncurry (zipWith toMoveSeq) -- figuring this out took quite a bit of time
+    |> both %~ copies
+    |> blackOrWhite
+      %~ imap deleteAt -- I love lens
+    |> uncurry (zipWith toMoveSeq) -- figuring this out took quite a bit of time
  where
   copies = replicate <| (moveCount moves - 1) `div` 2 + 1 -- 4 -> 2, 5 -> 3, 17 -> 8...
   blackOrWhite = if moves ^. nextColor == White then _1 else _2

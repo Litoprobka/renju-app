@@ -12,7 +12,7 @@ import System.Directory (doesFileExist)
 
 import Lib
 import Move (Move)
-import qualified Move
+import Move qualified
 
 -- very simple console-based UI that works with a single Lib
 -- I'm writing this to figure out what the GUI would need

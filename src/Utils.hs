@@ -54,3 +54,6 @@ maxBy :: Ord b => (a -> b) -> a -> a -> a
 maxBy f x y
   | f x >= f y = x
   | otherwise = y
+
+onNothingM :: Monad m => m a -> m (Maybe a) -> m a
+onNothingM = flip whenNothingM

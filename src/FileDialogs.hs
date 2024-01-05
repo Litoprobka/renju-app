@@ -7,7 +7,7 @@ import UITypes
 
 import Graphics.UI.TinyFileDialogs
 import Monomer
-import qualified Prelude as P (head)
+import Prelude qualified as P (head)
 
 {-
 --openFileDialog "owo" "~" [] "" False
@@ -35,6 +35,6 @@ saveLib =
 
 -- editBoardText
 editBoardText m t =
-  Task
-    <| maybe StopEditing (SavEditingBoardText m)
-    <$> inputBox "Enter board text" "" (Just t)
+  Task <|
+    maybe StopEditing (SavEditingBoardText m)
+      <$> inputBox "Enter board text" "" (Just t)
