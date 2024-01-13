@@ -60,10 +60,15 @@ pickSubcommand :: [String] -> (Maybe Text -> IO ()) -> IO ()
 pickSubcommand args gui = case args of
   arg : rest
     | arg == "gui" -> gui <. Just <| toFileName rest
+    | arg == "repair" -> repair <| toFileName rest
     | arg == "merge" -> merge rest
   _ -> gui Nothing
  where
   toFileName = map fromString .> unwords
+  repair fileName = do
+    lib <- loadLib' fileName
+    saveLib fileName <| Lib.repair lib
+    putTextLn <| "lib " <> fileName <> " repaired succesfully. Check it out via `renju-app gui " <> fileName
   merge =
     reverse
       .> uncons

@@ -3300,11 +3300,3 @@
     lhs: "return"
     note: "Use `pure`"
     rhs: pure
-- hint:
-    lhs: "g <| f <| x"
-    note: "Use `<.`"
-    rhs: g <. f <| x
-- hint:
-    lhs: "x |> f |> g"
-    note: "Use `.>`"
-    rhs: x |> f .> g

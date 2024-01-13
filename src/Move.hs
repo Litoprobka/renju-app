@@ -25,7 +25,13 @@ instance Hashable Move where
 
 -- * Creation
 
--- | Create a Move, checking that x and y are in [0..14]
+{- | Create a Move, checking that x and y are in [0..14]
+
+>>> fromInt 7 7 <&> Move.toText
+Just "h8"
+>>> fromInt 7 15 <&> Move.toText
+Nothing
+-}
 fromInt :: Int -> Int -> Maybe Move
 fromInt x' y'
   | validate x' && validate y' =
@@ -34,17 +40,14 @@ fromInt x' y'
  where
   validate coord = coord `elem` [0 .. 14] -- GHC optimises this away, right?
 
-{- | Create a Move, throwing an error if x or y are out of bounds.
-
-All of my calls to this function are safe, but there is no way to prove it without dependent / refinement types
--}
-fromIntPartial :: Int -> Int -> Move
-fromIntPartial x' y' = fromMaybe (error "invalid x or y") (fromInt x' y')
-
 charCoords :: String
 charCoords = "abcdefghijklmno"
 
--- | Create a Move from getpos format, i.e. "i7" -> (9, 6)
+{- | Create a Move from getpos format, i.e. "i7" -> (9, 6)
+
+>>> fromText "h9"
+Just (Move {_x = 7, _y = 8})
+-}
 fromText :: Text -> Maybe Move
 fromText t =
   case toString t of
@@ -62,6 +65,13 @@ toText m =
   one (charCoords !! view x m) <> show (m ^. y + 1)
 
 -- | Convert a Move to /x + 15 * y/. Used for hashing.
+--
+-- >>> toByte <$> fromText "i6"
+-- Just 83
+-- >>> toByte <$> fromText "a1"
+-- Just 0
+-- >>> toByte <$> fromText "o15"
+-- Just 224
 toByte :: Move -> Int
 toByte m = m ^. x + m ^. y * 15
 
@@ -75,7 +85,7 @@ hashPart m =
 -- | A 15x15 grid of moves
 grid :: [[Move]]
 grid =
-  [[fromIntPartial x y | x <- [0 .. 14]] | y <- [0 .. 14]]
+  [[Move x y | x <- [0 .. 14]] | y <- [0 .. 14]]
 
 -- | All mirroring and rotation functions that maintain the relative position of a move on the board
 transformations :: Vec8 (Move -> Move)

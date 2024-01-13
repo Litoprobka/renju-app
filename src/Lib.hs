@@ -8,16 +8,16 @@ import DefaultImports
 
 import Move (Move)
 import Move qualified
+import MoveSeq (MoveSeq)
+import MoveSeq qualified
 
+import Control.Exception (PatternMatchFail (..))
 import Control.Lens (lens)
 import Data.Aeson
 import Data.Default (Default (..))
-import Data.Foldable (foldr')
 import Data.HashMap.Strict qualified as HashMap
 import Data.Text qualified as Text (length)
 import Data.Vector.Generic.Sized qualified as S (index)
-import MoveSeq (MoveSeq, Stone (..))
-import MoveSeq qualified
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -88,8 +88,8 @@ addPos moveInfo moveSeq = lib . at moveSeq ?~ moveInfo
 
 -- | /O(log(n) * m)./ Add a positition to the lib move by move
 addPosRec :: MoveSeq -> Lib -> Lib
-addPosRec ms l =
-  foldr' addMove (set moves MoveSeq.empty l) (ms ^. MoveSeq.moveList)
+addPosRec pos l =
+  flipfoldl' addMove (l |> moves .~ MoveSeq.empty) (MoveSeq.moveList pos)
 
 -- | /O(log n)./ Add a move to the lib
 addMove :: Move -> Lib -> Lib
@@ -163,9 +163,12 @@ pos moveSeq = lib . at moveSeq
 currentPos :: Lens' Lib MoveInfo
 currentPos = lens getPos setPos
  where
-  -- there should be a nicer way to write this
-  getPos (\l -> l ^. pos (l ^. moves) -> Just moveInfo) = moveInfo
-  getPos _ = error "current pos does not exist in the lib (impossible)"
+  getPos l =
+    l ^. pos (l ^. moves)
+      |> fromMaybe
+        ( bug <. PatternMatchFail <|
+            toString (MoveSeq.toGetpos (l ^. moves)) <> " does not exist in the lib"
+        )
 
   setPos l moveInfo = l |> lib . at (l ^. moves) ?~ moveInfo
 
@@ -200,25 +203,6 @@ getBoardText move l =
       |> view moves
       |> MoveSeq.makeMove' move
 
--- * Other
-
--- | Pretty-print a Lib
-printLib :: Lib -> Text
-printLib l =
-  pos
-    |> MoveSeq.toText char
-    |> (<> ("Comment: " <> l ^. comment' <> "\n"))
- where
-  pos = l ^. moves
-
-  -- char move None = case MoveSeq.makeMove' move pos of
-  char ((`getBoardText` l) -> Just bt) Nothing =
-    (toString .> safeHead) bt
-      |> fromMaybe ' '
-  char move Nothing = if exists (MoveSeq.makeMove' move pos) l then '+' else '.'
-  char _ (Just Black) = 'x'
-  char _ (Just White) = 'o'
-
 -- * Some UI-related functions
 
 transform :: (Move -> Move) -> Lib -> Lib
@@ -229,3 +213,7 @@ mirror = transform <| Move.transformations `S.index` 1
 
 rotate :: Lib -> Lib
 rotate = transform <| Move.transformations `S.index` 6
+
+repair :: Lib -> Lib
+repair l = HashMap.foldlWithKey' go l (l ^. lib) where
+  go accLib pos _ = addPosRec pos accLib
