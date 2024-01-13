@@ -1,8 +1,9 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module UI (buildUI) where
+module UI (buildUI, textureNames) where
 
 import DefaultImports
+
 import EventHandling (handleClipboard)
 import Lib (Lib)
 import Lib qualified
@@ -12,68 +13,79 @@ import MoveSeq (Stone (..))
 import MoveSeq qualified
 import UITypes
 
-import Monomer
+import Monomer hiding (black, white)
+import Monomer qualified as Color (black, green, white)
 
 boardNode :: Lib -> Move -> App AppNode
-boardNode l m =
-  tooltip'
+boardNode l m = do
+  image <- stoneImage
+  pure
+    <. tooltip'
     <. box_ [onBtnPressed <| BoardClick m]
-    <. zstack
-    <$> sequence
-      [ stoneImage
-      , pure <| label_ moveText [ellipsis, trimSpaces, multiline] `styleBasic` [textCenter, textMiddle, textColor color]
+    <| zstack
+      [ image
+      , label_ moveText [ellipsis, trimSpaces, multiline]
+          `styleBasic` [textCenter, textMiddle, textColor textColor']
       ]
  where
   currentPos = view Lib.moves l
   stoneImage = do
     textures <- view stoneTextures
-    let (texture, size) = textures stoneAsset
-    pure <| imageMem_ ("stone" <> show stoneAsset) texture size [alignCenter, alignMiddle, fitEither]
+    let Texture texture size = textures ^. stoneLens
+    pure <| imageMem_ ("stone" <> textureNames ^. stoneLens) texture size [alignCenter, alignMiddle, fitEither]
 
-  stoneAsset = case l ^. Lib.moves |> MoveSeq.stoneAt m of
+  stoneLens :: Getter (StoneTypes a) a
+  stoneLens = case l ^. Lib.moves |> MoveSeq.stoneAt m of
     Nothing
-      | moveText /= ""
+      | moveText
+          /= ""
           || noNextMove ->
-          Blank
-      | otherwise -> Dot <| currentPos ^. MoveSeq.nextColor
-    Just color -> NextMove color
+          blank
+      | otherwise -> dotL (currentPos ^. MoveSeq.nextColor)
+    Just color -> stoneL color
 
   moveText =
     Lib.getBoardText m l
-      |> fromMaybe (maybe "" show (MoveSeq.moveIndex m <| l ^. Lib.moves))
+      <|> show <$> (MoveSeq.moveIndex m <| l ^. Lib.moves)
+      |> fromMaybe ""
 
   noNextMove = not <| Lib.exists (MoveSeq.makeMove' m currentPos) l
 
-  color
-    | (currentPos |> MoveSeq.lastMove) == Just m = green -- current move
+  textColor'
+    | (currentPos |> MoveSeq.lastMove) == Just m = Color.green -- current move
     | otherwise = case MoveSeq.moveIndex m currentPos of
-        Just (even -> True) -> black
-        Just _ -> white
+        Just (even -> True) -> Color.black
+        Just _ -> Color.white
         Nothing -- board text
           | noNextMove -> green
           | otherwise -> case currentPos ^. MoveSeq.nextColor of
-              Black -> black
-              White -> white
+              Black -> Color.black
+              White -> Color.white
 
   tooltip' = case flip Lib.getCommentOf l <$> MoveSeq.makeMove m currentPos of -- MoveSeq.makeMove is useful for once
     Nothing -> id
     Just "" -> id
     Just comment -> tooltip comment
 
+textureNames :: StoneTypes Text
+textureNames =
+  StoneTypes
+    { _blank = "blank"
+    , _black = "black-stone-gradient"
+    , _white = "white-stone-gradient"
+    , _blackDot = "move-exists-black"
+    , _whiteDot = "move-exists-white"
+    }
+
 boardImage :: App AppNode
 boardImage = do
-  (texture, size) <- view boardTexture
+  Texture texture size <- view boardTexture
   pure <| imageMem_ "background" texture size [fitFill]
 
 boardGrid :: Lib -> App AppNode
 boardGrid l =
-  [0 .. 14]
-    & traverse
-      ( \y ->
-          [0 .. 14]
-            |> map (`Move.fromIntPartial` y)
-              .> traverse (boardNode l)
-      )
+  Move.grid
+    & (traverse <. traverse) (boardNode l)
     <&> reverse
       .> map hgrid
       .> vgrid

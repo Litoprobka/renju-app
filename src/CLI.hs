@@ -105,5 +105,5 @@ pickSubcommand args gui = case args of
                 <&> loadLib'
                 & sequence
                 <&> foldr Lib.merge Lib.empty
-                >>= saveLib (fromString output)
+                  >>= saveLib (fromString output)
          )

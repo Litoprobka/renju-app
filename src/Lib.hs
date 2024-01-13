@@ -9,6 +9,7 @@ import DefaultImports
 import Move (Move)
 import Move qualified
 
+import Control.Lens (lens)
 import Data.Aeson
 import Data.Default (Default (..))
 import Data.Foldable (foldr')
@@ -17,7 +18,6 @@ import Data.Text qualified as Text (length)
 import Data.Vector.Generic.Sized qualified as S (index)
 import MoveSeq (MoveSeq, Stone (..))
 import MoveSeq qualified
-import Control.Lens (lens)
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -44,8 +44,10 @@ instance FromJSON MoveInfo where
   parseJSON =
     withObject "MoveInfo" <| \obj ->
       MoveInfo
-        <$> obj .: "comment"
-        <*> obj .: "board-text"
+        <$> obj
+        .: "comment"
+        <*> obj
+        .: "board-text"
 instance ToJSON Lib where
   toJSON (Lib l _) = toJSON l
 
@@ -120,7 +122,7 @@ removeR pos =
 
 -- | Remove current position from the lib
 remove :: Lib -> Lib
-remove l = l |> removeR (l ^. moves) |> back
+remove l = l |> removeR (l ^. moves) .> back
 
 -- | Merge two libs, prioritising positions, comments and board text from the first one
 merge :: Lib -> Lib -> Lib
@@ -159,7 +161,8 @@ pos moveSeq = lib . at moveSeq
 
 -- | /O(log n)./ Focuses MoveInfo of the current position
 currentPos :: Lens' Lib MoveInfo
-currentPos = lens getPos setPos where
+currentPos = lens getPos setPos
+ where
   -- there should be a nicer way to write this
   getPos (\l -> l ^. pos (l ^. moves) -> Just moveInfo) = moveInfo
   getPos _ = error "current pos does not exist in the lib (impossible)"

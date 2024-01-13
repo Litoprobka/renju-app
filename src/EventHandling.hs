@@ -154,6 +154,9 @@ handleEvent (Config{_dataHome}) wenv _ model evt = case evt of
 
   dropDir = takeWhileEnd (/= pathSeparator)
 
+  curPos' = model ^. lib . Lib.moves
+  curPos = (MoveSeq.toGetpos curPos', curPos' ^. MoveSeq.nextColor)
+
   -- Like Applicative `when`, but returns a value
   whenAlt :: Alternative f => Bool -> f a -> f a
   whenAlt True action = action

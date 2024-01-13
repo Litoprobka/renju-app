@@ -3,10 +3,11 @@
 
 module Move where
 
+import DefaultImports
+
 import Data.List (elemIndex, (!!))
 import Data.Vector (Vector)
-import qualified Data.Vector.Generic.Sized as S
-import DefaultImports
+import Data.Vector.Generic.Sized qualified as S
 
 -- | Represents a coordinate point on a board
 data Move = Move
@@ -53,12 +54,6 @@ fromText t =
       fromInt x' (y' - 1)
     _ -> Nothing
 
--- | Create a Move from a number in /x + 15 * y/ format.
-fromBytePartial :: Int -> Move
-fromBytePartial i
-  | i > 224 = error "invalid x or y"
-  | otherwise = i `divMod` 15 |> swap .> uncurry Move
-
 -- * Destruction
 
 -- | Convert a move to getpos format, i.e. (9, 6) -> "i7"
@@ -76,6 +71,11 @@ hashPart m =
   3 ^ toByte m
 
 -- * Other
+
+-- | A 15x15 grid of moves
+grid :: [[Move]]
+grid =
+  [[fromIntPartial x y | x <- [0 .. 14]] | y <- [0 .. 14]]
 
 -- | All mirroring and rotation functions that maintain the relative position of a move on the board
 transformations :: Vec8 (Move -> Move)

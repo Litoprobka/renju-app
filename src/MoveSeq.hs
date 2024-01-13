@@ -6,17 +6,18 @@
 
 module MoveSeq where
 
+import DefaultImports
+
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
 import Data.Foldable (foldr')
 import Data.List (elemIndex)
 import Data.List.Index (deleteAt, ipartition)
 import Data.Text (snoc, toLower)
-import DefaultImports
+import Data.Vector.Generic.Sized qualified as S
+
 import Move (Move, Vec8)
 import Move qualified
-
-import Data.Vector.Generic.Sized qualified as S
 
 {- | A /seq/uence of /move/s, representing a position on the board.
 
@@ -72,6 +73,7 @@ instance FromJSONKey MoveSeq where
     parser k = fail <| "cannot parse key " <> show k <> " into MoveSeq"
 
 -- * Utility functions for Stone
+
 flipStone :: Stone -> Stone
 flipStone Black = White
 flipStone White = Black
@@ -204,9 +206,8 @@ toText
   -> Text
   -- ^ Pretty-printed position
 toText f ms =
-  [0 .. 14]
-    <&> (\y -> (`Move.fromIntPartial` y) <$> [0 .. 14])
-      .> map (snoc " " <. (f <*> flip MoveSeq.stoneAt ms)) -- S-combinator, OwO (this is similar to \ m -> f m (MoveSeq.stoneAt m ms))
+  Move.grid
+    <&> map (snoc " " <. (f <*> flip MoveSeq.stoneAt ms)) -- S-combinator, OwO (this is similar to \ m -> f m (MoveSeq.stoneAt m ms))
     |> imap (\i -> foldl' (<>) <. align <| i + 1)
       .> (letters :)
       .> reverse
@@ -236,8 +237,8 @@ Technically, complexity is linear (225n), but in practice it is worse than /O(n^
 -}
 mapEmpty :: (Move -> a) -> MoveSeq -> [a]
 mapEmpty f moves =
-  [0 .. 224]
-    <&> Move.fromBytePartial
+  Move.grid
+    & concat
     & filter (`notIn` moves)
     <&> f
 
@@ -245,22 +246,22 @@ mapEmpty f moves =
 mapNext :: (MoveSeq -> a) -> MoveSeq -> [a]
 mapNext f moves = mapEmpty (f <. (`MoveSeq.makeMove'` moves)) moves
 
--- | /O(n^2)./ Return all parent positions (current one minus one move)
+{- | /O(n^3)./ Return all parent positions (current one minus one move)
+this function is horribly slow
+-}
 allPrev :: MoveSeq -> [MoveSeq]
 allPrev MoveSeq{_moveList = []} = []
 allPrev moves =
   moves
     ^. moveList
     |> reverse
-    |> ipartition (\i _ -> even i) -- True for black moves, False for white moves; I could write this as (even .> const), but the explicit lambda is more readable
+      .> ipartition (\i _ -> even i) -- True for black moves, False for white moves; I could write this as (even .> const), but the explicit lambda is more readable
     |> both %~ copies
-    |> blackOrWhite
-      %~ imap deleteAt -- I love lens
+    |> blackOrWhite %~ imap deleteAt -- I love lens
     |> uncurry (zipWith toMoveSeq) -- figuring this out took quite a bit of time
  where
   copies = replicate <| (moveCount moves - 1) `div` 2 + 1 -- 4 -> 2, 5 -> 3, 17 -> 8...
-  blackOrWhite = if moves ^. nextColor == White then _1 else _2
-
+  blackOrWhite = if odd (moveCount moves) then _1 else _2 -- TODO: nextColor gets invalid somewhere
   toMoveSeq :: [Move] -> [Move] -> MoveSeq
   toMoveSeq b w
     | even <| moveCount moves = go b w |> fromList -- move count is even => last move was white => previous to last move was black => start with black

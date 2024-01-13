@@ -6,12 +6,11 @@ import DefaultImports
 
 import Lib (Lib)
 import Move (Move)
-import MoveSeq (MoveSeq, Stone)
+import MoveSeq (MoveSeq, Stone (..))
 import UndoRedoList (UndoRedoList)
-
 import UndoRedoList qualified as URList
 
-import Monomer
+import Monomer hiding (black, white)
 
 data AppModel = AppModel
   { _libStates :: UndoRedoList Lib
@@ -25,16 +24,21 @@ data AppModel = AppModel
 data Config = Config
   { _dataHome :: Text
   -- ^ XDG_DATA_HOME/renju-app, i.e. where lib files and screenshots are stored
-  , _stoneTextures :: StoneTextureType -> (ByteString, Size)
+  , _stoneTextures :: StoneTypes Texture
   , -- I hope storing it as a function wouldn't hurt performance
-    _boardTexture :: (ByteString, Size)
+    _boardTexture :: Texture
   }
 
-data StoneTextureType
-  = Blank
-  | Dot Stone
-  | NextMove Stone
-  deriving (Eq, Show)
+data Texture = Texture ByteString Size
+
+data StoneTypes a = StoneTypes
+  { _blank :: a
+  , _black :: a
+  , _white :: a
+  , _blackDot :: a
+  , _whiteDot :: a
+  }
+  deriving (Eq, Show, Functor, Foldable, Traversable)
 
 type App a = Reader Config a
 
@@ -91,6 +95,17 @@ type AppNode = WidgetNode AppModel AppEvent
 
 makeLenses 'Config
 makeLenses 'AppModel
+makeLenses 'StoneTypes
+
+-- normally I don't like the L postfix, but chances are 'stone' and 'dot'
+-- would overlap with some variable names
+stoneL :: Stone -> Getter (StoneTypes a) a
+stoneL Black = black
+stoneL White = white
+
+dotL :: Stone -> Getter (StoneTypes a) a
+dotL Black = blackDot
+dotL White = whiteDot
 
 -- | Gets the current lib state
 lib :: Getting r AppModel Lib
