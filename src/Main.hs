@@ -5,7 +5,7 @@ module Main where
 
 import DefaultImports
 
-import CLI (pickSubcommand)
+import IO (pickSubcommand, loadImage)
 import EventHandling (handleEvent)
 import Lib qualified
 import UI (buildUI, textureNames)
@@ -14,9 +14,7 @@ import UndoRedoList qualified as URList
 
 import Monomer
 
-import Codec.Picture qualified as Picture
 import Control.Concurrent.Async
-import Data.Vector.Storable.ByteString (vectorToByteString)
 import System.Directory (XdgDirectory (XdgData), createDirectoryIfMissing, getXdgDirectory)
 
 import HSInstall.Paths (getShareDir)
@@ -51,15 +49,6 @@ main = do
 
   args <- getArgs
   pickSubcommand args <| \libFilePath -> startApp (model <| libPathOrDef libFilePath) (handleEvent appCfg) (buildUI appCfg) (config libFilePath)
-
-loadImage :: Text -> Text -> IO Texture
-loadImage resourceDir name = do
-  let path = resourceDir <> name <> ".png"
-  Right dynImage <- Picture.readImage <| toString path
-  let image@Picture.Image{imageWidth, imageHeight} = Picture.convertRGBA8 dynImage
-      size = Size (fromIntegral imageWidth) (fromIntegral imageHeight)
-      bytes = vectorToByteString <| Picture.imageData image
-  pure <| Texture bytes size
 
 model file =
   AppModel

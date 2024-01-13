@@ -3,8 +3,8 @@
 
 module EventHandling (handleClipboard, handleEvent) where
 
-import CLI
 import DefaultImports
+import IO qualified
 import MoveSeq qualified
 import UITypes
 
@@ -12,10 +12,7 @@ import Data.Default
 import Data.Sequence qualified as Seq
 import Monomer
 import Monomer.Lens qualified as L
-import Monomer.Widgets.Container (
-  Container (..),
-  createContainer,
- )
+import Monomer.Widgets.Container (Container (..), createContainer)
 
 import Data.Text (takeWhileEnd)
 import FileDialogs
@@ -59,7 +56,7 @@ handleEvent
 handleEvent (Config{_dataHome}) wenv _ model evt = case evt of
   NOOP -> []
   LoadLib libFilePath ->
-    [ Task <| uncurry NewLib <$> traverseToSnd (errorToException <=< loadLib) libFilePath
+    [ Task <| uncurry NewLib <$> traverseToSnd (errorToException <=< IO.loadLib) libFilePath
     , updateTitle libFilePath
     ]
   LoadLibDialog -> one <| Task openLib
@@ -67,7 +64,7 @@ handleEvent (Config{_dataHome}) wenv _ model evt = case evt of
     [ updateTitle libFilePath
     , Task <|
         NOOP
-          <$ when (not <| Lib.isEmpty (model ^. lib)) (CLI.saveLib libFilePath (model ^. lib))
+          <$ when (not <| Lib.isEmpty (model ^. lib)) (IO.saveLib libFilePath (model ^. lib))
     , updateModel currentFile (const libFilePath)
     ]
   SaveLibDialog -> one <| Task FileDialogs.saveLib
@@ -128,7 +125,7 @@ handleEvent (Config{_dataHome}) wenv _ model evt = case evt of
   updateLib = updateLibStates <. URList.update
   updateIfNotEditing f = whenAlt (not <| model ^. isEditing) [updateLib f]
 
-  errorToException :: Either LibLoadError Lib -> IO Lib
+  errorToException :: Either IO.LibLoadError Lib -> IO Lib
   errorToException (Left err) = error <| show err
   errorToException (Right newLib) = pure newLib
 
@@ -153,9 +150,6 @@ handleEvent (Config{_dataHome}) wenv _ model evt = case evt of
         <> dropDir libFilePath
 
   dropDir = takeWhileEnd (/= pathSeparator)
-
-  curPos' = model ^. lib . Lib.moves
-  curPos = (MoveSeq.toGetpos curPos', curPos' ^. MoveSeq.nextColor)
 
   -- Like Applicative `when`, but returns a value
   whenAlt :: Alternative f => Bool -> f a -> f a
