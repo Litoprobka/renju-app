@@ -159,27 +159,27 @@ isEmpty _ = False
 moveCount :: MoveSeq -> Int
 moveCount = lengthOf moveList
 
--- | /O(n)./ Returns the index of a move in a position, counting from one; Nothing if the does not exist in the position
-moveIndex :: Move -> MoveSeq -> Maybe Int
+{- | /O(n)./ Returns the index of a move in a position, counting from one; Nothing if the does not exist in the position
+this should have been an AffineFold, but they are not a thing in Lens
+-}
+moveIndex :: Move -> Fold MoveSeq Int
 moveIndex move =
-  view moveList
-    .> reverse
-    .> elemIndex move
-    <.>> (+ 1)
+  moveList
+    . reversed
+    . folding (elemIndex move)
+    . to (+ 1)
 
 {- | /O(n)./ Returns the stone color of a move in a position, or Nothing if it does not contain the move
 TODO: lens
 -}
-stoneAt :: Move -> MoveSeq -> Maybe Stone
+stoneAt :: Move -> Fold MoveSeq Stone
 stoneAt move =
   moveIndex move
-    <.>> \case
-      (odd -> True) -> Black
-      _ -> White
+    . to (odd .> bool White Black)
 
 -- | /O(n)./ Checks if a move does not exist in a position
 notIn :: Move -> MoveSeq -> Bool
-notIn move = stoneAt move .> isNothing
+notIn move = hasn't <| stoneAt move
 
 lastMove :: MoveSeq -> Maybe Move
 lastMove = (^? moveList . _head)
@@ -205,9 +205,9 @@ toText
   -- ^ The position to pretty-print
   -> Text
   -- ^ Pretty-printed position
-toText f ms =
+toText f pos =
   Move.grid
-    <&> map (snoc " " <. (f <*> flip MoveSeq.stoneAt ms)) -- S-combinator, OwO (this is similar to \ m -> f m (MoveSeq.stoneAt m ms))
+    <&> map (snoc " " <. (\m -> f m <| pos ^? MoveSeq.stoneAt m))
     |> imap (\i -> foldl' (<>) <. align <| i + 1)
       .> (letters :)
       .> reverse

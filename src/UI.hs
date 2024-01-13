@@ -35,7 +35,7 @@ boardNode l m = do
     pure <| imageMem_ ("stone" <> textureNames ^. stoneLens) texture size [alignCenter, alignMiddle, fitEither]
 
   stoneLens :: Getter (StoneTypes a) a
-  stoneLens = case l ^. Lib.moves |> MoveSeq.stoneAt m of
+  stoneLens = case l ^? Lib.moves . MoveSeq.stoneAt m of
     Nothing
       | moveText
           /= ""
@@ -46,14 +46,14 @@ boardNode l m = do
 
   moveText =
     Lib.getBoardText m l
-      <|> show <$> (MoveSeq.moveIndex m <| l ^. Lib.moves)
+      <|> show <$> (l ^? Lib.moves . MoveSeq.moveIndex m)
       |> fromMaybe ""
 
   noNextMove = not <| Lib.exists (MoveSeq.makeMove' m currentPos) l
 
   textColor'
     | (currentPos |> MoveSeq.lastMove) == Just m = Color.green -- current move
-    | otherwise = case MoveSeq.moveIndex m currentPos of
+    | otherwise = case currentPos ^? MoveSeq.moveIndex m of
         Just (even -> True) -> Color.black
         Just _ -> Color.white
         Nothing -- board text
