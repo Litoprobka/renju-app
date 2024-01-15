@@ -43,8 +43,6 @@ dependencies:
   - text
   - tinyfiledialogs
   - unordered-containers
-  - vector
-  - vector-sized
 
 executables:
   app:

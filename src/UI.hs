@@ -37,10 +37,7 @@ boardNode l m = do
   stoneLens :: Getter (StoneTypes a) a
   stoneLens = case l ^? Lib.moves . MoveSeq.stoneAt m of
     Nothing
-      | moveText
-          /= ""
-          || noNextMove ->
-          blank
+      | moveText /= "" || noNextMove -> blank
       | otherwise -> dotL (currentPos ^. MoveSeq.nextColor)
     Just color -> stoneL color
 

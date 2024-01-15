@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 module Lib where
 
@@ -17,7 +18,6 @@ import Data.Aeson
 import Data.Default (Default (..))
 import Data.HashMap.Strict qualified as HashMap
 import Data.Text qualified as Text (length)
-import Data.Vector.Generic.Sized qualified as S (index)
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
@@ -209,10 +209,10 @@ transform :: (Move -> Move) -> Lib -> Lib
 transform f = moves %~ MoveSeq.transform f
 
 mirror :: Lib -> Lib
-mirror = transform <| Move.transformations `S.index` 1
+mirror = transform Move.transformations.invertX
 
 rotate :: Lib -> Lib
-rotate = transform <| Move.transformations `S.index` 6
+rotate = transform Move.transformations.rotateR -- swapInvertY
 
 repair :: Lib -> Lib
 repair l = HashMap.foldlWithKey' go l (l ^. lib) where

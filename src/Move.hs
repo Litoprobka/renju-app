@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DerivingVia #-}
 
 module Move where
 
@@ -8,6 +9,7 @@ import DefaultImports
 import Data.List (elemIndex, (!!))
 import Data.Vector (Vector)
 import Data.Vector.Generic.Sized qualified as S
+import GHC.Generics ( Generic1, Generically1(..) )
 
 -- | Represents a coordinate point on a board
 data Move = Move
@@ -64,21 +66,22 @@ toText :: Move -> Text
 toText m =
   one (charCoords !! view x m) <> show (m ^. y + 1)
 
--- | Convert a Move to /x + 15 * y/. Used for hashing.
---
--- >>> toByte <$> fromText "i6"
--- Just 83
--- >>> toByte <$> fromText "a1"
--- Just 0
--- >>> toByte <$> fromText "o15"
--- Just 224
+{- | Convert a Move to /x + 15 * y/. Used for hashing.
+
+>>> toByte <$> fromText "i6"
+Just 83
+>>> toByte <$> fromText "a1"
+Just 0
+>>> toByte <$> fromText "o15"
+Just 224
+-}
 toByte :: Move -> Int
 toByte m = m ^. x + m ^. y * 15
 
 -- | Used to hash MoveSeq. A 'longhash' of MoveSeq is a sum of all hashParts of its moves, hence the name
-hashPart :: Move -> Integer
+hashPart :: Move -> Natural
 hashPart m =
-  3 ^ toByte m
+  4 ^ toByte m
 
 -- * Other
 
@@ -87,19 +90,31 @@ grid :: [[Move]]
 grid =
   [[Move x y | x <- [0 .. 14]] | y <- [0 .. 14]]
 
+data Transformations a = Transformations
+  { origin :: a
+  , invertX :: a
+  , invertY :: a
+  , rotate180 :: a
+  , swapXY :: a
+  , rotateL :: a
+  , rotateR :: a
+  , swapInvertBoth :: a
+  } deriving (Show, Functor, Foldable, Generic1)
+    deriving Applicative via Generically1 Transformations
+
 -- | All mirroring and rotation functions that maintain the relative position of a move on the board
-transformations :: Vec8 (Move -> Move)
+transformations :: Transformations (Move -> Move)
 transformations =
-  S.fromTuple
-    ( id
-    , invert x
-    , invert y
-    , invert x .> invert y
-    , swapxy
-    , swapxy .> invert x
-    , swapxy .> invert y
-    , swapxy .> invert x .> invert y
-    )
+  Transformations {
+    origin = id
+    , invertX = invert x
+    , invertY = invert y
+    , rotate180 = invert x .> invert y
+    , swapXY = swapxy
+    , rotateL = swapxy .> invert x
+    , rotateR = swapxy .> invert y
+    , swapInvertBoth = swapxy .> invert x .> invert y
+  }
  where
   invert coord = over coord (14 -)
   swapxy (Move x' y') = Move y' x'

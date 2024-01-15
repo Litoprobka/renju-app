@@ -12,11 +12,11 @@ import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
 import Data.Sequence qualified as Seq
 import Data.Text (snoc, toLower)
-import Data.Vector.Generic.Sized qualified as S
 
 import Control.Exception (PatternMatchFail (PatternMatchFail))
 import Control.Lens (lens)
-import Move (Move, Vec8)
+import Data.Bits (Bits, (.&.), (.|.))
+import Move (Move, Transformations)
 import Move qualified
 
 {- $setup
@@ -33,13 +33,13 @@ This implementation works only for Renju/Gomoku (i.e. not Pente), because it ass
 data MoveSeq = MoveSeq
   { _blackMoves :: Seq Move
   , _whiteMoves :: Seq Move
-  , _hashes :: Vec8 LongHash
+  , _hashes :: Transformations LongHash
   -- ^ LongHashes of all positions symmetrical to the current one. Minimum of these is *the* LongHash of a position.
   }
   deriving (Show)
 
 -- | A numeric representation of move list w/o move order, used to compare and hash MoveSeq's
-newtype LongHash = LongHash Integer deriving (Show, Eq, Ord, Num, Hashable)
+newtype LongHash = LongHash Natural deriving (Show, Eq, Ord, Num, Bits, Hashable)
 
 data Stone
   = Black
@@ -47,15 +47,15 @@ data Stone
   deriving (Show, Eq, Ord, Enum)
 
 makeLenses ''MoveSeq
-hash :: Getting r MoveSeq LongHash
-hash = to <| S.minimum <. view hashes
+hash :: MoveSeq -> LongHash
+hash = fromMaybe 0 <. minimumOf (hashes . folded)
 
 -- * Instances
 instance Eq MoveSeq where
-  (==) = (==) `on` view hash
+  (==) = (==) `on` hash
 
 instance Hashable MoveSeq where
-  hashWithSalt salt = hashWithSalt salt <. view hash
+  hashWithSalt salt = hashWithSalt salt <. hash
 
 instance ToJSON MoveSeq where
   toJSON = String <. toGetpos
@@ -81,22 +81,21 @@ flipStone Black = White
 flipStone White = Black
 
 hashMult :: Num a => Stone -> a
-hashMult Black = 1
-hashMult White = 2
+hashMult Black = 0b01
+hashMult White = 0b10
 
 -- * Construction
 
 -- | /O(1)./ A MoveSeq with no moves.
 empty :: MoveSeq
-empty = MoveSeq Seq.Empty Seq.Empty (S.replicate z)
- where
-  z = LongHash 0
+empty = MoveSeq Seq.Empty Seq.Empty (pure 0)
 
-{- | /O(n)./ Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
+{- | /O(1)./ Add a move with given coordinates to the position; if the coordinates are taken, return Nothing
 
 >>> pos "h8i9h6" |> makeMove (move "h9") |> fmap toGetpos
 Just "h8i9h6h9"
 >>> pos "h8i9h6" |> makeMove (move "i9") |> fmap toGetpos
+Nothing
 -}
 makeMove :: Move -> MoveSeq -> Maybe MoveSeq
 makeMove move pos
@@ -107,7 +106,7 @@ makeMove move pos
         |> Just
   | otherwise = Nothing
 
-{- | /O(n)./ Like 'makeMove', but returns the same position if the coordinates are taken
+{- | /O(1)./ Like 'makeMove', but returns the same position if the coordinates are taken
 
 >>> pos "h8i9h6" |> makeMove' (move "h9") |> toGetpos
 "h8i9h6h9"
@@ -156,9 +155,10 @@ toMove move pos = fromMaybe pos <| go pos
 
 -- ** From other types
 
-{- | /O(n^2)./ Construct a MoveSeq from a oldest-last list of moves
+{- | /O(n)./ Construct a MoveSeq from an oldest-last list of moves
+
 >>> fromList [Move.Move 7 7, Move.Move 8 8, Move.Move 9 5]
-MoveSeq {_blackMoves = fromList [Move {_x = 7, _y = 7},Move {_x = 9, _y = 5}], _whiteMoves = fromList [Move {_x = 8, _y = 8}], _hashes = Vector [LongHash 23580369429369911338394552015355538614916560710659122865033044,LongHash 2620041291167985700123397777602357757623342334241116896163700,LongHash 507528786056415874612613683420470581219134060880924366960507065742100,LongHash 6265787482178244272013944906057979564862907875870528424044978216884,LongHash 6265811062547399749167562576921430505183289574768635907265415978164,LongHash 507528788676456891887739859864946325681685661891690138294537954980980,LongHash 273892859523678922033139806156612576562907086006924820,LongHash 273892757720723688564415218233217662603175902427271764]}
+MoveSeq {_blackMoves = fromList [Move {_x = 7, _y = 7},Move {_x = 9, _y = 5}], _whiteMoves = fromList [Move {_x = 8, _y = 8}], _hashes = Vector [LongHash 231584178501592337514292610186187249950270747065061589676824193528848600530944,LongHash 14474011181624471095097012922214505206009281675045899760189053501748683997184,LongHash 497323236409786642182342195014838735427496950327112609656746446630975443716486090194944,LongHash 1942668892225729097879408586528362172082783453743349041304289664484187655236887773184,LongHash 1942669123809907572511799421116128718685237632611739526170084911194644782135078027264,LongHash 497323236424260653337006719241917853021209154366026096197306191820632267494626126987264,LongHash 26959946868017895328502301167095795134486154570532229723608647204864,LongHash 26959946679704843639584795771402356580195794430113736401950410276864]}
 -}
 fromList :: [Move] -> MoveSeq
 fromList = flipfoldl' makeMove' MoveSeq.empty
@@ -249,7 +249,8 @@ moveList pos = alternate (pos ^.. blackMoves . each) (pos ^.. whiteMoves . each)
   alternate [] _ = bug <| PatternMatchFail "blackMoves and whiteMoves differ in length by >1"
 
 {- | /O(n)./ Returns the index of a move in a position, counting from one; Nothing if the does not exist in the position
-this should have been an AffineFold, but they are not a thing in Lens
+
+This should have been an AffineFold, but they are not a thing in Lens
 -}
 moveIndex :: Move -> Fold MoveSeq Int
 moveIndex move =
@@ -260,7 +261,9 @@ moveIndex move =
   indexIn = (. folding (Seq.elemIndexL move) . to (* 2))
   combinePls f1 f2 k s = f1 k s *> f2 k s
 
-{- | /O(n)./ Returns the stone color of a move in a position, or Nothing if it does not contain the move
+{- | /~O(1)./ Returns the stone color of a move in a position, or Nothing if it does not contain the move
+
+Unlike MoveSeq.moveIndex, this function uses the LongHash representation
 
 >>> preview (stoneAt (Move.Move 8 8)) <$> fromGetpos "h8i9j6"
 Just (Just White)
@@ -269,12 +272,27 @@ Just Nothing
 -}
 stoneAt :: Move -> Fold MoveSeq Stone
 stoneAt move =
-  combinePls
-    (findMove blackMoves . to (const Black))
-    (findMove whiteMoves . to (const White))
+  hashes
+    . to Move.origin
+    . folding bitLookup
  where
-  findMove = (. folded . filtered (== move))
-  combinePls f1 f2 k s = f1 k s *> f2 k s
+  bitLookup idHash
+    | match == hashPart * hashMult Black = Just Black
+    | match == hashPart * hashMult White = Just White
+    | otherwise = Nothing
+   where
+    hashPart = LongHash <| Move.hashPart move
+    mask = hashPart * (hashMult Black .|. hashMult White) -- matches both black and white stones
+    match = idHash .&. mask
+
+{-
+>>> h8 = LongHash <| Move.hashPart <| move "h8"
+>>> h8
+>>> lh = pos "h8i9" |> view hashes |> (`S.index` 0)
+>>> lh .&. (0b11 * h8)
+LongHash 26959946667150639794667015087019630673637144422540572481103610249216
+LongHash 26959946667150639794667015087019630673637144422540572481103610249216
+-}
 
 -- | /O(n)./ Checks if a move does not exist in a position
 notIn :: Move -> MoveSeq -> Bool
@@ -296,8 +314,8 @@ toGetpos =
     <.>> Move.toText
     .> fold
 
-{- | /~O(n^2)./ Pretty-print a MoveSeq
-Like with mapEmpty, complexity is actually linear (225n).
+{- | /~O(n)./ Pretty-print a MoveSeq
+Like with mapEmpty, complexity is actually linear (225).
 Currently used only for code in comments
 -}
 toText :: MoveSeq -> Text
@@ -361,16 +379,16 @@ it assumes `nextColor` for `Add` and `prevColor` for `Remove`
 -}
 updateHashes :: HashUpdate -> Move -> MoveSeq -> MoveSeq
 updateHashes hu move pos =
-  pos |> over hashes (S.zipWith zf Move.transformations)
+  pos |> over hashes (liftA2 zf Move.transformations)
  where
-  zf trns = flip op (fromIntegral <. (* hashMult color) <. Move.hashPart <| trns move)
+  zf trns = flip op (LongHash <. (* hashMult color) <. Move.hashPart <| trns move)
   (op, color) = case hu of
     Add -> ((+), pos ^. nextColor)
     Remove -> ((-), pos ^. prevColor)
 
-{- | /~O(n^2)./ Apply a function to each Move that is not present in a given position.
+{- | /~O(n)./ Apply a function to each Move that is not present in a given position.
 
-Technically, complexity is linear (225n), but in practice it is worse than /O(n^2)/, because n <= 225
+Technically, complexity is linear (225), but in practice it is worse than /O(n)/, because n <= 225
 ...and that means using O notation here is kinda pointless, but whatever
 -}
 mapEmpty :: (Move -> a) -> MoveSeq -> [a]
