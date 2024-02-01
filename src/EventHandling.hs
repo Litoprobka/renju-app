@@ -22,6 +22,7 @@ import Relude.Extra (traverseToSnd)
 import System.FilePath (pathSeparator)
 import System.Process (callCommand)
 import UndoRedoList qualified as URList
+import Control.Exception (throwIO)
 
 -- Path to `handleClipboard` widget. Used in the ugly workaround way to send GetClipboard request from `keystroke` and then route it to `handleClipboard`
 -- I'm still not sure how it works, but it works
@@ -59,15 +60,15 @@ handleEvent (Config{_dataHome}) wenv _ model evt = case evt of
     [ Task <| uncurry NewLib <$> traverseToSnd (errorToException <=< IO.loadLib) libFilePath
     , updateTitle libFilePath
     ]
-  LoadLibDialog -> one <| Task openLib
+  LoadLibDialog -> one <. Task <| openLib _dataHome
   SaveLib libFilePath ->
     [ updateTitle libFilePath
     , Task <|
         NOOP
-          <$ when (not <| Lib.isEmpty (model ^. lib)) (IO.saveLib libFilePath (model ^. lib))
+          <$ IO.saveLib libFilePath (model ^. lib)
     , updateModel currentFile (const libFilePath)
     ]
-  SaveLibDialog -> one <| Task FileDialogs.saveLib
+  SaveLibDialog -> one <. Task <| FileDialogs.saveLib _dataHome
   SaveCurrentLib -> one <. Event <| SaveLib (model ^. currentFile)
   NewLib newTitle newLib ->
     [ updateLib (const newLib)
@@ -126,7 +127,7 @@ handleEvent (Config{_dataHome}) wenv _ model evt = case evt of
   updateIfNotEditing f = whenAlt (not <| model ^. isEditing) [updateLib f]
 
   errorToException :: Either IO.LibLoadError Lib -> IO Lib
-  errorToException (Left err) = error <| show err
+  errorToException (Left err) = throwIO err
   errorToException (Right newLib) = pure newLib
 
   handleClick m BtnLeft count =

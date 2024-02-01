@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 
 module Lib where
 
@@ -18,17 +18,18 @@ import Data.Aeson
 import Data.Default (Default (..))
 import Data.HashMap.Strict qualified as HashMap
 import Data.Text qualified as Text (length)
+import PosID (PosID, fromMoveSeq, toMoveSeq)
 
 -- | Additional info for a position, such as board text and comments
 data MoveInfo = MoveInfo
   { _comment :: Text
-  , _boardText :: HashMap MoveSeq Text
+  , _boardText :: HashMap PosID Text
   }
   deriving (Show, Eq)
 
 -- | Represents a database file
 data Lib = Lib
-  { _lib :: HashMap MoveSeq MoveInfo
+  { _lib :: HashMap PosID MoveInfo
   , _moves :: MoveSeq
   }
   deriving (Show, Eq)
@@ -64,7 +65,7 @@ makeLenses 'MoveInfo
 -- | /O(1)./ An empty database
 empty :: Lib
 empty =
-  Lib (one (MoveSeq.empty, def)) MoveSeq.empty
+  Lib (one (PosID.fromMoveSeq MoveSeq.empty, def)) MoveSeq.empty
 
 -- | /O(1)./ A wrapper around MoveSeq.back
 back :: Lib -> Lib
@@ -84,7 +85,7 @@ Intended for loading a lib from a text file.
 Overwrites MoveInfo if the position already exists
 -}
 addPos :: MoveInfo -> MoveSeq -> Lib -> Lib
-addPos moveInfo moveSeq = lib . at moveSeq ?~ moveInfo
+addPos moveInfo moveSeq = pos moveSeq ?~ moveInfo
 
 -- | /O(log(n) * m)./ Add a positition to the lib move by move
 addPosRec :: MoveSeq -> Lib -> Lib
@@ -98,7 +99,7 @@ addMove move l =
  where
   pos = MoveSeq.makeMove' move <| l ^. moves
 
--- | /O(log n)./ Check if a given position exists in the Lib. If it does, switches to it
+-- | /O(log n)./ Check if a given position exists in the Lib. If it does, switch to it
 nextMove :: Move -> Lib -> Lib
 nextMove move l =
   l |> applyIf (exists newPos) (moves .~ newPos)
@@ -109,7 +110,7 @@ nextMove move l =
 removePos :: MoveSeq -> Lib -> Lib
 removePos moveSeq
   | MoveSeq.isEmpty moveSeq = const Lib.empty -- empty board can't be deleted
-  | otherwise = lib . at moveSeq .~ Empty
+  | otherwise = pos moveSeq .~ Empty
 
 -- | Remove the given position and all of its derivable positions from the lib
 removeR :: MoveSeq -> Lib -> Lib
@@ -136,7 +137,7 @@ merge l1 l2 = lib %~ HashMap.unionWith mergeMoveInfo (l2 ^. lib) <| l1
 
 -- | /O(log n)./ Apply a (MoveInfo -> MoveInfo) function to a given move in a lib
 updatePos :: (MoveInfo -> MoveInfo) -> MoveSeq -> Lib -> Lib
-updatePos f ms = lib . ix ms %~ f
+updatePos f moveSeq = pos' moveSeq %~ f
 
 -- | /O(log n)./ Replace the comment for the current position
 addComment :: Text -> Lib -> Lib
@@ -144,20 +145,19 @@ addComment t l = updatePos (set comment t) (l ^. moves) l
 
 -- | /O(log n)./ Replace board text of a given move for the current position
 addBoardText :: Move -> Text -> Lib -> Lib
-addBoardText m t l = updatePos (over boardText upd) pos l
+addBoardText m t l = l |> currentPos . boardText . at' btpos . non "" .~ t
  where
-  btpos = MoveSeq.makeMove' m pos
-  upd
-    | btpos == pos = id
-    | t == "" = sans btpos
-    | otherwise = at btpos ?~ t
-  pos = l ^. moves
+  btpos = MoveSeq.makeMove' m <| l ^. moves
 
 -- * Lens
 
 -- | /O(log n)./ Focuses MoveInfo of a given position, or lack thereof
 pos :: MoveSeq -> Lens' Lib (Maybe MoveInfo)
-pos moveSeq = lib . at moveSeq
+pos moveSeq = lib . at' moveSeq
+
+-- | /O(log n)./ Focuses MoveInfo of a given position
+pos' :: MoveSeq -> Traversal' Lib MoveInfo
+pos' moveSeq = lib . ix (PosID.fromMoveSeq moveSeq)
 
 -- | /O(log n)./ Focuses MoveInfo of the current position
 currentPos :: Lens' Lib MoveInfo
@@ -170,11 +170,15 @@ currentPos = lens getPos setPos
             toString (MoveSeq.toGetpos (l ^. moves)) <> " does not exist in the lib"
         )
 
-  setPos l moveInfo = l |> lib . at (l ^. moves) ?~ moveInfo
+  setPos l moveInfo = l |> addPos moveInfo (l ^. moves)
 
 -- | /O(log n)./ Focuses the comment of the current position, "" if there is none
 comment' :: Lens' Lib Text
 comment' = currentPos . comment
+
+-- | A wrapper around `at` that treats MoveSeq as PosID
+at' :: MoveSeq -> Lens' (HashMap PosID a) (Maybe a)
+at' moveSeq = at (PosID.fromMoveSeq moveSeq)
 
 -- * Queries
 
@@ -183,25 +187,21 @@ isEmpty = (== Lib.empty)
 
 -- | /O(log n)./ Check if a given position exists in the lib
 exists :: MoveSeq -> Lib -> Bool -- not sure about the argument order, maybe Move and Pos should be the other way around
-exists ms = view lib .> HashMap.member ms
+exists moveSeq = has (pos' moveSeq)
 
 -- | /O(log n)./ Return the comment of a given position, "" if there is none or the position does not exist
 getCommentOf :: MoveSeq -> Lib -> Text
 getCommentOf moveSeq =
-  view (pos moveSeq . _Just . comment)
+  view (pos' moveSeq . comment)
 {- ^ seems like `view` silently falls back on Monoid instance of Text
 luckily, that's exactly what we want here
 -}
 
 -- | /O(log n * log m)./ Get current pos' board text for a given point on the board
 getBoardText :: Move -> Lib -> Maybe Text
-getBoardText move l =
-  l |> view (currentPos . boardText . at newPos)
- where
-  newPos =
-    l
-      |> view moves
-      |> MoveSeq.makeMove' move
+getBoardText move l = do
+  newPos <- MoveSeq.makeMove move <| l ^. moves
+  l ^. currentPos . boardText . at' newPos
 
 -- * Some UI-related functions
 
@@ -215,5 +215,6 @@ rotate :: Lib -> Lib
 rotate = transform Move.transformations.rotateR -- swapInvertY
 
 repair :: Lib -> Lib
-repair l = HashMap.foldlWithKey' go l (l ^. lib) where
-  go accLib pos _ = addPosRec pos accLib
+repair l = HashMap.foldlWithKey' go l (l ^. lib)
+ where
+  go accLib pos _ = addPosRec (PosID.toMoveSeq pos) accLib

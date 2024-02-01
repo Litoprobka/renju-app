@@ -7,9 +7,8 @@ module Move where
 import DefaultImports
 
 import Data.List (elemIndex, (!!))
-import Data.Vector (Vector)
-import Data.Vector.Generic.Sized qualified as S
 import GHC.Generics ( Generic1, Generically1(..) )
+import Data.Bits ((.<<.))
 
 -- | Represents a coordinate point on a board
 data Move = Move
@@ -17,8 +16,6 @@ data Move = Move
   , _y :: Int
   }
   deriving (Show, Eq, Ord)
-
-type Vec8 = S.Vector Vector 8
 
 makeLenses 'Move
 
@@ -81,7 +78,7 @@ toByte m = m ^. x + m ^. y * 15
 -- | Used to hash MoveSeq. A 'longhash' of MoveSeq is a sum of all hashParts of its moves, hence the name
 hashPart :: Move -> Natural
 hashPart m =
-  4 ^ toByte m
+  1 .<<. (2 * toByte m)
 
 -- * Other
 

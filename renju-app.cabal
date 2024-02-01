@@ -26,6 +26,7 @@ library
       Main
       Move
       MoveSeq
+      PosID
       UI
       UITypes
       UndoRedoList
@@ -63,8 +64,6 @@ library
     , text
     , tinyfiledialogs
     , unordered-containers
-    , vector
-    , vector-sized
   mixins:
       base hiding (System.IO.Unsafe)
   default-language: GHC2021
@@ -79,6 +78,7 @@ executable app
       Lib
       Move
       MoveSeq
+      PosID
       UI
       UITypes
       UndoRedoList
@@ -115,8 +115,6 @@ executable app
     , text
     , tinyfiledialogs
     , unordered-containers
-    , vector
-    , vector-sized
   mixins:
       base hiding (System.IO.Unsafe)
   default-language: GHC2021
@@ -161,8 +159,6 @@ test-suite spec
     , text
     , tinyfiledialogs
     , unordered-containers
-    , vector
-    , vector-sized
   mixins:
       base hiding (System.IO.Unsafe)
   default-language: GHC2021

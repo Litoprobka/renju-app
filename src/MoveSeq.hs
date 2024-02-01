@@ -8,8 +8,6 @@ module MoveSeq where
 
 import DefaultImports
 
-import Data.Aeson
-import Data.Aeson.Types (toJSONKeyText)
 import Data.Sequence qualified as Seq
 import Data.Text (snoc, toLower)
 
@@ -53,26 +51,6 @@ hash = fromMaybe 0 <. minimumOf (hashes . folded)
 -- * Instances
 instance Eq MoveSeq where
   (==) = (==) `on` hash
-
-instance Hashable MoveSeq where
-  hashWithSalt salt = hashWithSalt salt <. hash
-
-instance ToJSON MoveSeq where
-  toJSON = String <. toGetpos
-
-instance ToJSONKey MoveSeq where
-  toJSONKey = toJSONKeyText toGetpos
-instance FromJSON MoveSeq where
-  parseJSON = withText "MoveSeq" parser
-   where
-    parser (fromGetpos -> Just pos) = pure pos
-    parser txt = fail <| "cannot parse " <> show txt <> " into MoveSeq"
-
-instance FromJSONKey MoveSeq where
-  fromJSONKey = FromJSONKeyTextParser parser
-   where
-    parser (fromGetpos -> Just pos) = pure pos
-    parser k = fail <| "cannot parse key " <> show k <> " into MoveSeq"
 
 -- * Utility functions for Stone
 
@@ -230,19 +208,19 @@ Black
 Black
 Just White
 -}
-nextColor :: Getter MoveSeq Stone
-nextColor = to moveCount . to (odd .> bool Black White) -- white if odd
+nextColor :: MoveSeq -> Stone
+nextColor = moveCount .> (odd .> bool Black White) -- white if odd
 
 -- | /O(1)./ Color of the last made move
-prevColor :: Getter MoveSeq Stone
-prevColor = nextColor . to flipStone
+prevColor :: MoveSeq -> Stone
+prevColor = nextColor .> flipStone
 
 {- | /O(n)./ A left-to-right list of moves of the position
 >>> moveList <$> fromGetpos "h8i9j8k8"
 Just [Move {_x = 7, _y = 7},Move {_x = 8, _y = 8},Move {_x = 9, _y = 7},Move {_x = 10, _y = 7}]
 -}
 moveList :: MoveSeq -> [Move]
-moveList pos = alternate (pos ^.. blackMoves . each) (pos ^.. whiteMoves . each)
+moveList pos = alternate (pos ^.. blackMoves . folded) (pos ^.. whiteMoves . folded)
  where
   alternate (x : xs) ys = x : alternate ys xs
   alternate [] [] = []
@@ -348,7 +326,7 @@ coloredLens
   -> Lens' MoveSeq a
 coloredLens onB onW = lens get set
  where
-  pickLens (view nextColor -> Black) = onB
+  pickLens (nextColor -> Black) = onB
   pickLens _ = onW
 
   get pos = pos ^. pickLens pos
@@ -383,8 +361,8 @@ updateHashes hu move pos =
  where
   zf trns = flip op (LongHash <. (* hashMult color) <. Move.hashPart <| trns move)
   (op, color) = case hu of
-    Add -> ((+), pos ^. nextColor)
-    Remove -> ((-), pos ^. prevColor)
+    Add -> ((+), pos |> nextColor)
+    Remove -> ((-), pos |> prevColor)
 
 {- | /~O(n)./ Apply a function to each Move that is not present in a given position.
 
@@ -418,7 +396,6 @@ allPrev pos =
     pos'
       |> updateHashes Remove (pos' ^?! prevColorMoves . ix i)
       |> over prevColorMoves (Seq.deleteAt i)
-
 
 transform :: (Move -> Move) -> MoveSeq -> MoveSeq
 transform f =

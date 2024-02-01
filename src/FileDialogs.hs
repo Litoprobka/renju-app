@@ -14,22 +14,22 @@ import Prelude qualified as P (head)
   inputBox "toast" "le hidden toast" (Just "toast?")
 -}
 
-openLib :: IO AppEvent
-openLib =
+openLib :: Text -> IO AppEvent
+openLib dataHome =
   maybe NOOP (LoadLib . P.head) -- if a file is picked, the list is guaranteed to contain one element
     <$> openFileDialog
       "Open a lib file"
-      "$RENJU_APP_DIR"
+      dataHome
       ["*.json", "*", "!*.*"]
       "Lib fiels"
       False
 
-saveLib :: IO AppEvent
-saveLib =
+saveLib :: Text -> IO AppEvent
+saveLib dataHome =
   maybe NOOP SaveLib
     <$> saveFileDialog
       "Save the lib"
-      "$RENJU_APP_DIR"
+      dataHome
       ["*.json", "*", "!*.*"]
       "Lib files"
 

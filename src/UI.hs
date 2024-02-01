@@ -38,7 +38,7 @@ boardNode l m = do
   stoneLens = case l ^? Lib.moves . MoveSeq.stoneAt m of
     Nothing
       | moveText /= "" || noNextMove -> blank
-      | otherwise -> dotL (currentPos ^. MoveSeq.nextColor)
+      | otherwise -> dotL (currentPos |> MoveSeq.nextColor)
     Just color -> stoneL color
 
   moveText =
@@ -55,7 +55,7 @@ boardNode l m = do
         Just _ -> Color.white
         Nothing -- board text
           | noNextMove -> green
-          | otherwise -> case currentPos ^. MoveSeq.nextColor of
+          | otherwise -> case currentPos |> MoveSeq.nextColor of
               Black -> Color.black
               White -> Color.white
 
