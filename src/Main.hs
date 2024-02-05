@@ -43,7 +43,7 @@ main = do
         , appFontDef "Regular" <| resourceDir <> "fonts/Roboto-Regular.ttf"
         , appInitEvent <. LoadLib <| libPathOrDef libFilePath
         , appDisposeEvent <| SaveCurrentLib
-        , appWindowState <| MainWindowNormal (765, 765)
+        , appWindowState <| MainWindowNormal (630, 630)
         , appWindowResizable False
         ]
 

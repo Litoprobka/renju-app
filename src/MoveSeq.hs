@@ -183,6 +183,7 @@ fromGetpos =
 -- ** Queries
 
 {- | /O(1)./ Checks if a MoveSeq is empty
+
 >>> isEmpty MoveSeq.empty
 True
 >>> isEmpty <$> fromGetpos "h8h9h6"
@@ -193,6 +194,7 @@ isEmpty MoveSeq{_blackMoves = Seq.Empty, _whiteMoves = Seq.Empty} = True
 isEmpty _ = False
 
 {- | /O(1)./ The number of moves in a position
+
 >>> moveCount MoveSeq.empty
 0
 >>> moveCount <$> fromGetpos "h8i9j6i8"
@@ -202,6 +204,7 @@ moveCount :: MoveSeq -> Int
 moveCount pos = Seq.length (pos ^. blackMoves) + Seq.length (pos ^. whiteMoves)
 
 {- | /O(1)./ Color of the to-be-made move
+
 >>> view nextColor MoveSeq.empty
 Black
 >>> view nextColor <$> fromGetpos "h8i9j6"
