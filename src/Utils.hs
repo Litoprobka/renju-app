@@ -34,7 +34,7 @@ tryApply :: (a -> Maybe a) -> a -> a
 tryApply f x = fromMaybe x (f x)
 
 applyAll :: [a -> a] -> a -> a
-applyAll = foldl' (.>) id
+applyAll = foldr (.>) id
 
 -- | Given a predicate `p`, function `f` and value `x`: if `p x` is true, return `f x`; otherwise, return `x`
 applyIf :: (a -> Bool) -> (a -> a) -> a -> a
