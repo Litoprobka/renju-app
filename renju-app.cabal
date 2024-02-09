@@ -27,6 +27,7 @@ library
       Move
       MoveSeq
       PosID
+      TH
       UI
       UITypes
       UndoRedoList
@@ -53,14 +54,15 @@ library
     , bytestring-to-vector
     , data-default
     , directory
+    , file-embed
     , filepath
     , flow
-    , hsinstall
     , ilist
     , lens
     , monomer
     , process
     , relude
+    , template-haskell
     , text
     , tinyfiledialogs
     , unordered-containers
@@ -68,7 +70,7 @@ library
       base hiding (System.IO.Unsafe)
   default-language: GHC2021
 
-executable app
+executable renju-app
   main-is: Main.hs
   other-modules:
       DefaultImports
@@ -79,6 +81,7 @@ executable app
       Move
       MoveSeq
       PosID
+      TH
       UI
       UITypes
       UndoRedoList
@@ -92,7 +95,7 @@ executable app
       OverloadedStrings
       NoImplicitPrelude
       StrictData
-  ghc-options: -W -threaded
+  ghc-options: -W -threaded -O2
   build-depends:
       JuicyPixels
     , aeson
@@ -104,14 +107,15 @@ executable app
     , bytestring-to-vector
     , data-default
     , directory
+    , file-embed
     , filepath
     , flow
-    , hsinstall
     , ilist
     , lens
     , monomer
     , process
     , relude
+    , template-haskell
     , text
     , tinyfiledialogs
     , unordered-containers
@@ -146,9 +150,9 @@ test-suite spec
     , bytestring-to-vector
     , data-default
     , directory
+    , file-embed
     , filepath
     , flow
-    , hsinstall
     , hspec ==2.*
     , ilist
     , lens
@@ -156,6 +160,7 @@ test-suite spec
     , process
     , relude
     , renju-app
+    , template-haskell
     , text
     , tinyfiledialogs
     , unordered-containers

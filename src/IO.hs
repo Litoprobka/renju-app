@@ -46,14 +46,13 @@ saveLib filePath =
   encodePretty
     .> atomicWriteFile (toString filePath)
 
-loadImage :: Text -> Text -> IO Texture
-loadImage resourceDir name = do
-  let path = resourceDir <> name <> ".png"
-  Right dynImage <- Picture.readImage <| toString path
-  let image@Picture.Image{imageWidth, imageHeight} = Picture.convertRGBA8 dynImage
-      size = Size (fromIntegral imageWidth) (fromIntegral imageHeight)
-      bytes = vectorToByteString <| Picture.imageData image
-  pure <| Texture bytes size
+-- meant to be called at compile time
+decodeTexture :: ByteString -> Texture
+decodeTexture mem = Texture bytes size where
+  Right dynImage = Picture.decodeImage mem
+  image@Picture.Image{imageWidth, imageHeight} = Picture.convertRGBA8 dynImage
+  size = Size (fromIntegral imageWidth) (fromIntegral imageHeight)
+  bytes = vectorToByteString <| Picture.imageData image
 
 -- todo: use optparse-applicative?
 pickSubcommand :: [String] -> (Maybe Text -> IO ()) -> IO ()

@@ -1,7 +1,7 @@
 [Desktop Entry]
 Categories=Utility;
-Icon=app
-Name=app
+Icon=renju-app
+Name=renju-app
 Type=Application
-Exec=app
+Exec=renju-app
 

@@ -31,26 +31,28 @@ dependencies:
   - bytestring-to-vector
   - data-default
   - directory
+  - file-embed
   - filepath
   - flow
-  - hsinstall
   - ilist
   - JuicyPixels
   - lens
   - monomer
   - process
   - relude
+  - template-haskell
   - text
   - tinyfiledialogs
   - unordered-containers
 
 executables:
-  app:
+  renju-app:
     source-dirs: src
     main: Main.hs
     ghc-options:
       - -W
       - -threaded
+      - -O2
 
 library: # seems like I have to do this for hspec
   source-dirs: src
